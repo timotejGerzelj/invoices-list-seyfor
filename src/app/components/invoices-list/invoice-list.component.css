@@ -1,0 +1,15 @@
+@import '~bootstrap/dist/css/bootstrap.min.css';
+.table-header {
+    background-color: #939393;
+    font-weight: bold;
+
+  }
+  .clickable {
+    cursor: pointer;
+  }
+  .table-bordered {
+    border: 1px solid #ddd; /* Add borders to create a box-like appearance */
+  }
+  .table tr, .table th, .table td {
+    border: 1px solid #ddd; /* Add borders to create a box-like appearance */
+  }

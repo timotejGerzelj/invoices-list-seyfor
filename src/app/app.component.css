@@ -1,0 +1,30 @@
+.app-container {
+    display: flex;
+    flex-direction: column; /* Stack items vertically */
+    align-items: flex-start; /* Align items to the left side */
+    background-color: #333; /* Dark grey background color */
+    color: white; /* White text color */
+    padding: 20px; /* Add padding for spacing */
+  }
+  header {
+    text-align: left; /* Align text to the left */
+    margin-bottom: 20px; /* Add space below the header */
+  }
+  
+  .header-content {
+    display: flex; /* Use Flexbox */
+    align-items: center; /* Vertically center items within the container */
+    gap: 20px; /* Add some spacing between h1 and h2 */
+  }
+  
+  h1, h2 {
+    margin: 0; /* Remove default margin on h1 and h2 */
+  }
+  
+  h1 {
+    font-weight: bold; /* Make h1 text bold */
+  }
+  
+  router-outlet {
+    flex-grow: 1; /* Allow content to grow and fill the remaining space */
+  }
