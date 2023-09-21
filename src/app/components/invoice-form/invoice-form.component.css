@@ -1,0 +1,42 @@
+.form-box {
+    border: 1px solid #ccc; /* Thin grey border */
+    border-radius: 5px; /* Slightly rounded corners */
+    padding: 20px; /* Add more padding for spacing */
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2); /* Add a subtle shadow */
+    width: 300px; /* Set a fixed width for the form */
+    margin: 20px auto; /* Center the form horizontally and provide spacing */
+  }
+  
+  h2 {
+    margin-bottom: 10px; /* Add spacing below the heading */
+  }
+  
+  label {
+    display: block; /* Display labels as blocks for better alignment */
+    margin-bottom: 5px; /* Add spacing below labels */
+  }
+  
+  input[type="text"],
+  textarea {
+    width: 100%; /* Make the input fields take full width */
+    padding: 10px; /* Add padding to input fields */
+    margin-bottom: 10px; /* Add spacing below input fields */
+    border: 1px solid #ccc; /* Thin grey border for input fields */
+    border-radius: 3px; /* Slightly rounded corners for input fields */
+  }
+  
+  button {
+    background-color: #007BFF; /* Blue background color for buttons */
+    color: white; /* White text color */
+    padding: 10px 20px; /* Add padding to buttons */
+    border: none; /* Remove button borders */
+    border-radius: 3px; /* Slightly rounded corners for buttons */
+    cursor: pointer; /* Add pointer cursor on hover */
+  }
+  
+  button:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+  }
+  .form-control.ng-invalid {
+    border: 2px solid red; /* Set a red border for invalid inputs */
+  }

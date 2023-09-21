@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, catchError } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, map } from 'rxjs';
 import { Racun } from '../models/racun.model';
 import { HttpClient } from '@angular/common/http';
 
@@ -24,7 +24,16 @@ export class InvoicesService {
       .subscribe((invoices) => {
         console.log(invoices)
         this.invoicesSubject.next(invoices);
+        console.log(this.invoices$);
       });
+  }
+
+  // Finds a task by its ID in the observable tasks$.
+  findInvoiceById(invoiceId: number): Observable<Racun | undefined> {
+    console.log("invoiceId")
+    return this.invoices$.pipe(
+      map((invoices) => invoices.find((invoice) => invoice.id === invoiceId))
+    );
   }
 
   

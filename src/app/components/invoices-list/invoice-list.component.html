@@ -1,5 +1,7 @@
 <div class="container">
     <h1 class="mt-4">Seznam Racunov</h1>
+    <button [routerLink]="['/invoiceform']" class="btn btn-primary me-2">Nov Racun</button>
+
     <div class="table-responsive">
         <table class="table table-bordered" *ngIf="invoices$ | async as invoices;">
             <thead class="table-header table-secondary">
@@ -8,20 +10,22 @@
                     <th tabindex="0" class="clickable col-2 col-md-1">St. organizacije</th>
                     <th tabindex="0" class="clickable col-4 col-md-3">Znesek</th>
                     <th tabindex="0" class="col-2 col-md-2">St. stranke</th>
-                    <th tabindex="0" class="col-12 col-md-3">St. artikla</th>
                     <th tabindex="0"  class="clickable col-4 col-md-3">Date of Creation</th>
-                  </tr>
+                </tr>
             </thead>
-        </table>
         <tbody>
             <tr *ngFor="let invoice of invoices$ | async">
                 <td>{{ invoice.id }}</td>
                 <td>{{ invoice.orgId }}</td>
                 <td>{{ invoice.znesek}}</td>
                 <td>{{ invoice.strankaId }}</td>
-                <td>{{ invoice.artikelId }}</td>
                 <td>{{ invoice.dateOfCreation }}</td>
-              </tr>
+                <td >
+                    <button [routerLink]="['/invoiceform', invoice.id]" class="btn btn-primary me-2">Uredi Racun</button>
+                </td>
+            </tr>
         </tbody>
+    </table>
+
     </div>
 </div>

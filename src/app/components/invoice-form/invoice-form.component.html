@@ -1,14 +1,14 @@
 <div class="form-box">
-    <h2>Invoice</h2>
-    <form >
+    <h2>{{ invoice.id > -1 ? 'Edit' : 'Add' }} Invoice</h2> 
+      <form [formGroup]="invoiceForm" (ngSubmit)="onTaskSubmit()">
         <label for="stranka">Izberi Stranko</label>
         <select></select>
         <label for="racunDatum">Datum izstavljanja</label>
-        <input />
+        <input type="date" />
         <label for="vnosRacuna">Artikli</label>
         <h1 class="mt-4">Seznam Racunov</h1>
         <div class="table-responsive">
-            <table class="table table-bordered" *ngIf="invoices$ | async as invoices;">
+            <table class="table table-bordered">
                 <thead class="table-header table-secondary">
                     <tr>
                         <th tabindex="0" class="clickable col-2 col-md-1">#</th>
@@ -19,7 +19,12 @@
                       </tr>
                 </thead>
             <tbody>
-                <tr>
+                <tr *ngFor="let line of invoice.lineItems">
+                    <td>{{ line.id }}</td>
+                    <td>{{ line.artikelId }}</td>
+                    <td>Naziv</td>
+                    <td>{{ line.kolicina }}</td>
+                    <td>Cena</td>
 
                 </tr>
             </tbody>
@@ -27,11 +32,4 @@
     </div>
 
     </form>
-    export interface Racun 
-    id: number;
-    dateOfCreation: Date;
-    znesek: number;
-    orgId: number;
-    strankaId: number;
-    artikelId: number;
 </div>

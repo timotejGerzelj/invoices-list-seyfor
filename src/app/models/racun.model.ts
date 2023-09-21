@@ -1,3 +1,5 @@
+import { RacunVrstica } from "./line-item.model";
+
 export interface Racun {
     id: number;
     dateOfCreation: Date;
@@ -5,4 +7,5 @@ export interface Racun {
     orgId: number;
     strankaId: number;
     artikelId: number;
+    lineItems: RacunVrstica[];
   }

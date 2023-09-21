@@ -1,9 +1,5 @@
-export interface LineItem {
+export interface RacunVrstica {
     id: number; // unique identifier for the line item (optional)
-    itemCode: string;
-    itemName: string;
-    quantity: number;
-    price: number;
-    totalValue: number;
-  }
-  
+    kolicina: number;
+    artikelId: number
+}
