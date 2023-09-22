@@ -1,0 +1,16 @@
+<div class="popup">
+    <h3>Edit Row</h3>
+    <form [formGroup]="rowForm">
+      <label for="article">Article</label>
+      <select formControlName="article">
+        <option *ngFor="let article of artikli" [value]="article.id">{{ article.ime }}</option>
+      </select>
+  
+      <label for="quantity">Quantity</label>
+      <input type="number" formControlName="quantity">
+  
+      <div class="calculated-cost">
+      </div>
+
+    </form>
+  </div>

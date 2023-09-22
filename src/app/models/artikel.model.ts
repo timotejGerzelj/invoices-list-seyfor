@@ -1,6 +1,6 @@
-export interface Organizacija {
+export interface Artikel {
     id: number;
     ime: string;
-    opis: string;
+    cena: number;
   }
   

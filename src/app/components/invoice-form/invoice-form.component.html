@@ -1,11 +1,11 @@
 <div class="form-box">
     <h2>{{ invoice.id > -1 ? 'Edit' : 'Add' }} Invoice</h2> 
       <form [formGroup]="invoiceForm" (ngSubmit)="onTaskSubmit()">
-        <label for="stranka">Izberi Stranko</label>
-        <select></select>
-        <label for="racunDatum">Datum izstavljanja</label>
-        <input type="date" />
-        <label for="vnosRacuna">Artikli</label>
+        <select formControlName="strankaId" name="stranka">
+            <option *ngFor="let stranka of stranke" [value]="stranka.id">{{ stranka.ime }}</option>
+          </select>
+        <label for="dateOfCreation">Datum izstavljanja</label>
+        <input type="date" formControlName="dateOfCreation" name="dateOfCreation">
         <h1 class="mt-4">Seznam Racunov</h1>
         <div class="table-responsive">
             <table class="table table-bordered">
@@ -20,14 +20,15 @@
                 </thead>
             <tbody>
                 <tr *ngFor="let line of invoice.lineItems">
-                    <td>{{ line.id }}</td>
-                    <td>{{ line.artikelId }}</td>
-                    <td>Naziv</td>
-                    <td>{{ line.kolicina }}</td>
-                    <td>Cena</td>
-
+                    <td>{{line.id}}</td>
+                   <td>{{line.artikelId}}</td>
+                    <td>{{line.artikel?.ime}}</td>
+                    <td>{{line.kolicina}}</td>
+                    <td >{{line.artikel?.cena}}€</td>
+                    
                 </tr>
             </tbody>
+
         </table>
     </div>
 

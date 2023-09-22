@@ -1,5 +1,8 @@
+import { Artikel } from "./artikel.model";
+
 export interface RacunVrstica {
     id: number; // unique identifier for the line item (optional)
     kolicina: number;
-    artikelId: number
+    artikelId: number;
+    artikel?: Artikel;
 }
