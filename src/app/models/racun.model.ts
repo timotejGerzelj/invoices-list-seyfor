@@ -6,6 +6,5 @@ export interface Racun {
     znesek: number;
     orgId: number;
     strankaId: number;
-    artikelId: number;
     lineItems: RacunVrstica[];
   }

@@ -1,0 +1,19 @@
+<form class="form-box" [formGroup]="lineItemForm" (ngSubmit)="onSubmitLineRow()">
+    <label for="articleId">Select Article:</label>
+    <select formControlName="artikelId" name="articleId">
+        <option *ngFor="let artikel of artikli" [value]="artikel.id">{{ artikel.ime }}</option>
+    </select>
+    <div *ngIf="lineItemForm.get('artikelId')?.invalid && lineItemForm.get('artikelId')?.touched">
+        <div class="text-danger">Please select an article.</div>
+    </div>
+  
+    <label for="quantity">Quantity:</label>
+    <input required type="number" formControlName="quantity" />
+    <div *ngIf="lineItemForm.get('quantity')?.invalid && lineItemForm.get('quantity')?.touched">
+      <div class="text-danger">Please enter a valid quantity (at least 1).</div>
+    </div>
+  
+    <button [disabled]="!lineItemForm.valid" type="submit">Add Line Row</button>
+    <button (click)="navigateBackToPreviousForm()">Go Back</button>
+
+  </form>

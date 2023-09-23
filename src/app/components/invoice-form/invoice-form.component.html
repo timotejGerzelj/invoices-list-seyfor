@@ -18,19 +18,20 @@
                         <th tabindex="0" class="col-12 col-md-3">Cena</th>
                       </tr>
                 </thead>
-            <tbody>
-                <tr *ngFor="let line of invoice.lineItems">
-                    <td>{{line.id}}</td>
-                   <td>{{line.artikelId}}</td>
-                    <td>{{line.artikel?.ime}}</td>
-                    <td>{{line.kolicina}}</td>
-                    <td >{{line.artikel?.cena}}€</td>
-                    
-                </tr>
-            </tbody>
-
+                <tbody>
+                    <tr *ngFor="let line of lineItems$ | async; let i = index">
+                      <td>{{ i + 1 }}</td>
+                      <td>{{ line.artikelId }}</td>
+                      <td>{{ line.artikel?.ime }}</td>
+                      <td>{{ line.kolicina }}</td>
+                      <td>{{ line.artikel?.cena }}€</td>
+                      <button class="me-2" (click)="navigateToAddLineRow(invoice.id, line.id)">Uredi vrstico</button>
+                    </tr>
+                  </tbody>
         </table>
     </div>
+    <button [disabled]="invoiceForm.valid" type="submit">Ustvari nov racun</button>
+    <button class="me-2" (click)="navigateToAddLineRow(invoice.id, 0)">Dodaj novo vrstico</button>
 
     </form>
 </div>

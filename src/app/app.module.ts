@@ -7,14 +7,14 @@ import { InvoiceListComponent } from './components/invoices-list/invoice-list.co
 import { HttpClientModule } from '@angular/common/http';
 import { InvoiceFormComponent } from './components/invoice-form/invoice-form.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { RowPopupComponent } from './components/row-popup/row-popup.component';
+import { LineItemFormComponent } from './components/line-item-form/line-item-form.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     InvoiceFormComponent,
     InvoiceListComponent,
-    RowPopupComponent
+    LineItemFormComponent  
   ],
   imports: [
     BrowserModule,
