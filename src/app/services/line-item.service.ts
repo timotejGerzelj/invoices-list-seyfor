@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { RacunVrstica } from '../models/line-item.model';
-import { BehaviorSubject, Observable, catchError, map, tap } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, map, switchMap, tap } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
 @Injectable({
@@ -38,38 +38,59 @@ export class LineItemService {
         throw error; 
       }),
       tap((newRacunVrstica) => {
-        console.log("Hello");
-        // When the POST request is successful, add the newTask to the existing tasks
-        const currentTasks = this.lineItemsSubject.value;
-        currentTasks.push(newRacunVrstica);
-        this.lineItemsSubject.next(currentTasks);
+        // Update the lineItemsSubject with the newly created line item
+        const currentItems = this.lineItemsSubject.value;
+        currentItems.push(newRacunVrstica);
+        this.setLineItems(currentItems); // Update the observable here
       })
     );
-
-  }
+  } 
   updateLineItem(lineItem: RacunVrstica): Observable<RacunVrstica> {
-    console.log(lineItem);
+    console.log("updating lineItem, ", lineItem);
     const url = `${this.apiUrl}/${lineItem.id}`;
     return this.http.put<RacunVrstica>(url, lineItem).pipe(
       catchError((error) => {
         console.error('Edit Error:', error);
         throw error;
       }),
-      tap(() => {
-        const currentLineItems = this.lineItemsSubject.value;
-        const updatedIndex = currentLineItems.findIndex((task) => task.id === lineItem.id);
-        if (updatedIndex !== -1) {
-          currentLineItems[updatedIndex] = lineItem;
-          this.lineItemsSubject.next([...currentLineItems]);
-        }
+      tap((newLineitem) => {
+        // Update the lineItemsSubject with the newly created line item
+        console.log("to update: ", lineItem);
+        const currentTasks = this.lineItemsSubject.value;
+        const updatedItems = currentTasks.map((item) => (item.id === lineItem.id ? lineItem : item));
+        console.log("updatedItems");
+        this.setLineItems(updatedItems); // Update the observable here
       })
-    );
+    )
   }
+
   findLineItemById(lineItemId: number): Observable<RacunVrstica | undefined> {
     return this.lineItems$.pipe(
       map((tasks) => tasks.find((task) => task.id === lineItemId))
     );
   }
+
+  addNewLineItem(lineItem: RacunVrstica){
+    const currentTasks = this.lineItemsSubject.value;
+    currentTasks.push(lineItem);
+    this.lineItemsSubject.next(currentTasks);
+  }
+  GetRacunLineItemById(racunId: number): void  {
+    const url = `http://localhost:5102/api/Racun/${racunId}/RacunVrstica`;
+    this.http.get<RacunVrstica[]>(url).pipe(
+      catchError((error) => {
+        console.error('Get All Tasks Error:', error);
+        throw error; 
+      })
+    )
+    .subscribe((lineItems) => {
+
+      console.log("lineItems, ", lineItems)
+      this.lineItemsSubject.next(lineItems);
+    });
+  }
+
+
 
 
 }

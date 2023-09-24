@@ -13,7 +13,7 @@
       <div class="text-danger">Please enter a valid quantity (at least 1).</div>
     </div>
   
-    <button [disabled]="!lineItemForm.valid" type="submit">Add Line Row</button>
+    <button [disabled]="!lineItemForm.valid" type="submit">{{ racunVrstica.id > -1 ? 'Uredi' : 'Dodaj' }} Vrstico</button>
     <button (click)="navigateBackToPreviousForm()">Go Back</button>
 
   </form>

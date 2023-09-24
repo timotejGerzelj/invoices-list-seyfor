@@ -14,7 +14,7 @@ const routes: Routes = [
     component: LineItemFormComponent, // Update with your actual component name
   },
   {
-    path: 'invoiceform/:id/new',
+    path: 'invoiceform/:invoiceid/new',
     component: LineItemFormComponent, // Update with your actual component name
   },
 ];

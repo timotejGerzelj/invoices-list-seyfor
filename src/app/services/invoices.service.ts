@@ -40,16 +40,12 @@ export class InvoicesService {
     );
   }
 
-  createInvoice(invoice: Racun, racunVrstice: RacunVrstica[]): Observable<Racun> {
+  createInvoice(invoice: Racun): Observable<Racun> {
     const headers = { 'Authorization': 'Bearer my-token', 'My-Custom-Header': 'foobar' };
     
     // Create a payload object that contains both the Racun and RacunVrstica objects
-    const payload = {
-      invoice: invoice,
-      racunVrstice: racunVrstice
-    };
-  
-    return this.http.post<Racun>(this.apiUrl, payload, { headers }).pipe(
+    console.log(invoice);
+    return this.http.post<Racun>(this.apiUrl, invoice, { headers }).pipe(
       catchError((error) => {
         console.error('Create Error:', error);
         throw error;

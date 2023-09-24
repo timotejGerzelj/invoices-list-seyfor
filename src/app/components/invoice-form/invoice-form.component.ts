@@ -26,6 +26,7 @@ export class InvoiceFormComponent {
   isPopupVisible: boolean = false;
   selectedLineItems: RacunVrstica[] = [];
   lineItems$: Observable<RacunVrstica[]>;
+  totalCost: number = 0;
   constructor(
     private fb: FormBuilder,
     private invoiceService: InvoicesService,
@@ -41,24 +42,20 @@ export class InvoiceFormComponent {
       strankaId: [0, [Validators.required]],
       dateOfCreation: [null, [Validators.required]]
     });
-    let lineItems: RacunVrstica[] = []
     this.route.params.subscribe((params) => {
       const invoiceId = +params['id'];
-      this.stranke = this.strankaService.stranke;
-
+      this.strankaService.getAllStranke().subscribe((stranke) => {
+        console.log(stranke);
+        this.stranke = stranke;
+        console.log(this.stranke);
+      });
+      console.log(this.stranke)
       if (invoiceId) {
         this.invoiceService.findInvoiceById(invoiceId).subscribe((invoice) => {
         this.artikli = this.artikelService.artikli;
         if (invoice) {
-            this.invoice = invoice;
-            invoice.lineItems.forEach((lineItem) => {
-            console.log(lineItem);
-            lineItems.push(lineItem);
-            const matchingArtikel = this.artikli.find((artikel) => artikel.id === lineItem.artikelId);
-            if (matchingArtikel) {
-              lineItem.artikel = matchingArtikel;
-            }
-          });
+          this.invoice = invoice;
+          this.lineItemService.GetRacunLineItemById(invoiceId);
           const invoiceDate = new Date(invoice.dateOfCreation);
           const formattedDate = `${invoiceDate.getFullYear()}-${(invoiceDate.getMonth() + 1)
             .toString()
@@ -74,24 +71,27 @@ export class InvoiceFormComponent {
             }
           });
          }
-          else {
-            this.initializeNewTask();
-          }
+
       });
+      this.lineItems$ = this.lineItemService.lineItems$;
       }
       else {
-      this.initializeNewTask();
-    }
-    console.log("Hello sneaky");
-    this.lineItemService.setLineItems(lineItems);
-    
-    this.lineItems$ = this.lineItemService.lineItems$;
-
+      this.initializeNewInvoice();
+    }    
     });
+    this.calculateTotalCost();
 }
-calculateTheSum() {
-    return 1;
-}
+
+initializeNewInvoice(): void {
+  this.invoice = {
+    id: 0 ,
+    dateOfCreation: new Date().toISOString(),
+    znesek: 0,
+    orgId: 0,
+    strankaId: 0,
+    lineItems: []
+  };}
+
 onTaskSubmit(): void {
     if (this.invoiceForm.valid) {
       const strankaId = this.invoiceForm.get('strankaId')?.value;
@@ -101,23 +101,13 @@ onTaskSubmit(): void {
       const newInvoice: Racun = {
         id: 0 ,
         dateOfCreation: dateOfCreation,
-        znesek: this.calculateTheSum(),
+        znesek: 0,
         orgId: 0,
         strankaId: strankaId,
         lineItems: lineItems
       };
   
     }
-  }
-  initializeNewTask(): void {
-    this.invoice = {
-      id: -1,
-      dateOfCreation: new Date(),
-      znesek: 0,
-      orgId: 0,
-      strankaId: 0,
-      lineItems: []
-    };
   }
   navigateToAddLineRow(invoiceId: number, lineItemId?: number) {
     this.invoiceService.selectedLineItems = this.selectedLineItems
@@ -129,5 +119,54 @@ onTaskSubmit(): void {
       this.router.navigate(['invoiceform', invoiceId, 'new']);
     }
   }
-  
+  navigateToRoot(): void {
+    this.router.navigate(['/']);
+  }
+
+  onSubmitInvoiceForm() {
+    console.log("Hello");
+    console.log(this.invoice);
+    if (this.invoice.id){
+      this.invoice.dateOfCreation = this.invoiceForm.value.dateOfCreation;
+        this.invoice.strankaId = this.invoiceForm.value.strankaId;
+        this.invoiceService.updateInvoice(this.invoice).subscribe(
+          (response) => {
+
+            // Handle the response here
+            console.log('Response:', response);
+            this.navigateToRoot()
+          },
+          (error) => {
+            // Handle errors here
+            console.error('Error:', error);
+          }
+        );
+      }
+      else {
+        this.invoice.dateOfCreation = this.invoiceForm.value.dateOfCreation;
+        this.invoice.strankaId = this.invoiceForm.value.strankaId;
+        this.invoice.orgId = 1;
+        this.invoiceService.createInvoice(this.invoice).subscribe(
+          (response) => {
+            console.log('Response:', response);
+            this.navigateToRoot()
+          }, (error) => {
+            console.error('Error:', error);
+
+          }
+        );
+      }
+  }
+  calculateTotalCost(): void {
+    let totalCost = 0;
+
+    this.lineItems$.subscribe((lineItems) => {
+      if (lineItems) {
+        for (const lineItem of lineItems) {
+          totalCost += lineItem.kolicina * (lineItem.artikel?.cena || 0);
+        }
+      }
+      this.totalCost = totalCost;
+    });
+  }
 }

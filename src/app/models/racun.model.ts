@@ -2,7 +2,7 @@ import { RacunVrstica } from "./line-item.model";
 
 export interface Racun {
     id: number;
-    dateOfCreation: Date;
+    dateOfCreation: string;
     znesek: number;
     orgId: number;
     strankaId: number;

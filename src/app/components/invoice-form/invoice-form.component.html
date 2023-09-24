@@ -1,37 +1,43 @@
 <div class="form-box">
-    <h2>{{ invoice.id > -1 ? 'Edit' : 'Add' }} Invoice</h2> 
-      <form [formGroup]="invoiceForm" (ngSubmit)="onTaskSubmit()">
-        <select formControlName="strankaId" name="stranka">
-            <option *ngFor="let stranka of stranke" [value]="stranka.id">{{ stranka.ime }}</option>
-          </select>
-        <label for="dateOfCreation">Datum izstavljanja</label>
-        <input type="date" formControlName="dateOfCreation" name="dateOfCreation">
-        <h1 class="mt-4">Seznam Racunov</h1>
-        <div class="table-responsive">
-            <table class="table table-bordered">
-                <thead class="table-header table-secondary">
-                    <tr>
-                        <th tabindex="0" class="clickable col-2 col-md-1">#</th>
-                        <th tabindex="0" class="clickable col-2 col-md-1">Artikel id</th>
-                        <th tabindex="0" class="clickable col-4 col-md-3">Naziv</th>
-                        <th tabindex="0" class="col-2 col-md-2">Kolicina</th>
-                        <th tabindex="0" class="col-12 col-md-3">Cena</th>
-                      </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let line of lineItems$ | async; let i = index">
+  <button class="me-2" (click)="navigateToRoot()">Cancel</button>
+
+  <h2>{{ invoice.id > -1 ? 'Edit' : 'Add' }} Invoice</h2> 
+  <form [formGroup]="invoiceForm" (ngSubmit)="onSubmitInvoiceForm()">
+      <select formControlName="strankaId" name="strankaId">
+          <option *ngFor="let stranka of stranke" [value]="stranka.id">{{ stranka.ime }}</option>
+      </select>
+      <label for="dateOfCreation">Datum izstavljanja</label>
+      <input type="date" formControlName="dateOfCreation" name="dateOfCreation">
+      <h1 class="mt-4">Seznam Racunov</h1>
+      <div class="table-responsive">
+          <table class="table table-bordered">
+              <thead class="table-header table-secondary">
+                  <tr>
+                      <th tabindex="0" class="clickable col-2 col-md-1">#</th>
+                      <th tabindex="0" class="clickable col-2 col-md-1">Artikel id</th>
+                      <th tabindex="0" class="clickable col-4 col-md-3">Naziv</th>
+                      <th tabindex="0" class="col-2 col-md-2">Kolicina</th>
+                      <th tabindex="0" class="col-12 col-md-3">Cena</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  <tr *ngFor="let line of lineItems$ | async; let i = index">
                       <td>{{ i + 1 }}</td>
                       <td>{{ line.artikelId }}</td>
                       <td>{{ line.artikel?.ime }}</td>
                       <td>{{ line.kolicina }}</td>
                       <td>{{ line.artikel?.cena }}€</td>
-                      <button class="me-2" (click)="navigateToAddLineRow(invoice.id, line.id)">Uredi vrstico</button>
-                    </tr>
-                  </tbody>
-        </table>
-    </div>
-    <button [disabled]="invoiceForm.valid" type="submit">Ustvari nov racun</button>
-    <button class="me-2" (click)="navigateToAddLineRow(invoice.id, 0)">Dodaj novo vrstico</button>
-
+                      <td>
+                          <button class="me-2" (click)="navigateToAddLineRow(invoice.id, line.id)">Uredi vrstico</button>
+                      </td>
+                  </tr>
+              </tbody>
+              <div class="total-cost">
+                Total Cost: {{ totalCost }} €
+              </div>            
+          </table>
+      </div>
+      <button [disabled]="invoiceForm.invalid" type="submit">{{ invoice.id > 0 ? 'Uredi' : 'Ustvari nov ' }} racun</button>
+      <button *ngIf="invoice.id !== 0" class="me-2" (click)="navigateToAddLineRow(invoice.id, 0)">Dodaj novo vrstico</button>
     </form>
 </div>
