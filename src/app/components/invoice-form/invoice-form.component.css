@@ -40,3 +40,14 @@
   .form-control.ng-invalid {
     border: 2px solid red; /* Set a red border for invalid inputs */
   }
+  .form-box {
+    width: 100%;
+    height: 100vh; /* 100% of the viewport height */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Adjust this as needed to change vertical alignment */
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  

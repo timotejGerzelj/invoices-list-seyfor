@@ -1,7 +1,7 @@
-import { Component, EventEmitter } from '@angular/core';
+import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, Subject, map, switchMap, take } from 'rxjs';
 import { Artikel } from 'src/app/models/artikel.model';
 import { RacunVrstica } from 'src/app/models/line-item.model';
 import { Racun } from 'src/app/models/racun.model';
@@ -20,13 +20,15 @@ export class InvoiceFormComponent {
   invoice: Racun;
   artikli: Artikel[];
   stranke: Stranka[];
-  onSubmit = new EventEmitter<Racun>()
   isDisabled: boolean = false;
   invoiceForm: FormGroup;
-  isPopupVisible: boolean = false;
+  lineItemForm: FormGroup;
   selectedLineItems: RacunVrstica[] = [];
   lineItems$: Observable<RacunVrstica[]>;
   totalCost: number = 0;
+  editedLineItemIndex: number = -1;
+  lineItemEditForm: FormGroup;
+
   constructor(
     private fb: FormBuilder,
     private invoiceService: InvoicesService,
@@ -42,17 +44,27 @@ export class InvoiceFormComponent {
       strankaId: [0, [Validators.required]],
       dateOfCreation: [null, [Validators.required]]
     });
+    this.lineItemForm = this.fb.group({
+      artikelId: [0, [Validators.required]], // Update form control name to "strankaId"
+      quantity: [0, [Validators.required, Validators.min(1)]] // Update form control name to "quantity"
+    });
+    this.lineItemEditForm = this.fb.group({
+      artikelIdEdit: [null, [Validators.required]],
+      quantityEdit: [null, [Validators.required, Validators.min(1)]],
+    });
+    this.lineItemService.setLineItemsToEmpty();
+    this.artikli = this.artikelService.artikli;
+    console.log("artikli, ", this.artikli);
     this.route.params.subscribe((params) => {
       const invoiceId = +params['id'];
+      console.log("invoiceId: ", invoiceId);
+
       this.strankaService.getAllStranke().subscribe((stranke) => {
-        console.log(stranke);
         this.stranke = stranke;
-        console.log(this.stranke);
       });
-      console.log(this.stranke)
+      this.artikli = this.artikelService.artikli;
       if (invoiceId) {
         this.invoiceService.findInvoiceById(invoiceId).subscribe((invoice) => {
-        this.artikli = this.artikelService.artikli;
         if (invoice) {
           this.invoice = invoice;
           this.lineItemService.GetRacunLineItemById(invoiceId);
@@ -64,21 +76,21 @@ export class InvoiceFormComponent {
             strankaId: invoice.strankaId,
             dateOfCreation: formattedDate
           })
-          invoice.lineItems.forEach((lineItem) => {
-            const matchingArtikel = this.artikli.find((artikel) => artikel.id === lineItem.artikelId);
-            if (matchingArtikel) {
-              lineItem.artikel = matchingArtikel;
-            }
-          });
+          this.lineItems$ = this.lineItemService.lineItems$;
+         }
+         else {
+          console.log("Invoice not found.");
          }
 
-      });
-      this.lineItems$ = this.lineItemService.lineItems$;
+      })
       }
       else {
+      this.lineItems$ = this.lineItemService.lineItems$;
       this.initializeNewInvoice();
     }    
     });
+    this.lineItems$ = this.lineItemService.lineItems$;
+
     this.calculateTotalCost();
 }
 
@@ -91,53 +103,24 @@ initializeNewInvoice(): void {
     strankaId: 0,
     lineItems: []
   };}
-
-onTaskSubmit(): void {
-    if (this.invoiceForm.valid) {
-      const strankaId = this.invoiceForm.get('strankaId')?.value;
-      const dateOfCreation = this.invoiceForm.get('dateOfCreation')?.value;
-      let lineItems = this.lineItemService.getLineItemsArray();
-
-      const newInvoice: Racun = {
-        id: 0 ,
-        dateOfCreation: dateOfCreation,
-        znesek: 0,
-        orgId: 0,
-        strankaId: strankaId,
-        lineItems: lineItems
-      };
-  
-    }
-  }
-  navigateToAddLineRow(invoiceId: number, lineItemId?: number) {
-    this.invoiceService.selectedLineItems = this.selectedLineItems
-    if (lineItemId) {
-      // Editing an existing lineItem
-      this.router.navigate(['invoiceform', invoiceId, lineItemId]);
-    } else {
-      // Creating a new lineItem
-      this.router.navigate(['invoiceform', invoiceId, 'new']);
-    }
-  }
   navigateToRoot(): void {
+    this.lineItemService.setLineItemsToEmpty()
     this.router.navigate(['/']);
   }
-
+  
   onSubmitInvoiceForm() {
-    console.log("Hello");
-    console.log(this.invoice);
-    if (this.invoice.id){
+    if (this.invoice.id != 0){
       this.invoice.dateOfCreation = this.invoiceForm.value.dateOfCreation;
-        this.invoice.strankaId = this.invoiceForm.value.strankaId;
+        this.invoice.strankaId = parseInt(this.invoiceForm.value.strankaId);
+        this.invoice.lineItems = [];
+        this.invoice.znesek = this.totalCost;
+        console.log(this.invoice);
         this.invoiceService.updateInvoice(this.invoice).subscribe(
           (response) => {
-
-            // Handle the response here
             console.log('Response:', response);
             this.navigateToRoot()
           },
           (error) => {
-            // Handle errors here
             console.error('Error:', error);
           }
         );
@@ -146,20 +129,144 @@ onTaskSubmit(): void {
         this.invoice.dateOfCreation = this.invoiceForm.value.dateOfCreation;
         this.invoice.strankaId = this.invoiceForm.value.strankaId;
         this.invoice.orgId = 1;
+        this.invoice.znesek = this.totalCost;
         this.invoiceService.createInvoice(this.invoice).subscribe(
           (response) => {
             console.log('Response:', response);
-            this.navigateToRoot()
+            this.createLineItems(response.id)
           }, (error) => {
             console.error('Error:', error);
-
           }
         );
       }
   }
+  setLineItem(invoiceId: number): RacunVrstica {
+    const lineItem: RacunVrstica = {
+      id: 0,
+      artikelId: 0,
+      racunId: invoiceId,
+      kolicina: 0,
+    };
+    return lineItem;
+    }
+  onLineItemSubmit(){
+    //create
+    if (this.invoice.id != 0){
+      let newRacunVrstica = this.setLineItem(this.invoice.id);
+      newRacunVrstica.artikelId = parseInt(this.lineItemForm.value.artikelId);
+      newRacunVrstica.kolicina = this.lineItemForm.value.quantity;
+      newRacunVrstica.artikel = this.artikli.find((artikel) => artikel.id === newRacunVrstica.artikelId);
+      console.log("Racun artikel: ", newRacunVrstica);
+
+      this.lineItemService.createLineItem(newRacunVrstica).subscribe(
+        (response) => {
+          // Handle the response here
+          console.log('Response:', response);
+          this.isArtikelAlreadySelected(newRacunVrstica.artikelId)
+        },
+        (error) => {
+          // Handle errors here
+          console.error('Error:', error);
+        }
+      );
+    }
+    else {
+      let newRacunVrstica = this.setLineItem(0);
+      newRacunVrstica.artikelId = parseInt(this.lineItemForm.value.artikelId);
+      newRacunVrstica.artikel = this.artikli.find((artikel) => artikel.id === newRacunVrstica.artikelId);
+      newRacunVrstica.kolicina = this.lineItemForm.value.quantity;
+      console.log("Racun artikel: ", newRacunVrstica);
+      this.lineItemService.addLineItem(newRacunVrstica);
+      this.isArtikelAlreadySelected(newRacunVrstica.artikelId)
+    }
+    this.lineItemForm.reset({
+      artikelId: null, 
+      quantity: null,   
+    });
+    this.lineItemForm.markAsUntouched();
+
+
+    this.calculateTotalCost();
+  }
+  startEditingLineItem(index: number) {
+    this.editedLineItemIndex = index;
+    this.lineItems$.subscribe((lineItems) => {
+      if (lineItems && lineItems.length > index) {
+        const selectedLineItem = lineItems[index];
+        console.log(selectedLineItem);
+        this.lineItemEditForm.patchValue({
+          artikelIdEdit: selectedLineItem.artikelId,
+          quantityEdit: selectedLineItem.kolicina,
+        });
+      }
+    });
+  }
+  saveEditedLineItem(lineItem: RacunVrstica) {
+    if (this.invoice.id) {
+      const updatedArtikelId = lineItem.artikelId;
+      const updatedQuantity = lineItem.kolicina;
+      lineItem.artikelId = updatedArtikelId;
+      lineItem.kolicina = updatedQuantity;
+      this.artikli.forEach((artikel) => {
+        if (artikel.id === lineItem.artikelId) {
+          lineItem.artikel = artikel;
+        }
+      });
+      this.lineItemService.updateLineItem(lineItem).subscribe(
+        (response) => {
+          // Handle the response here
+          console.log('Response:', response);
+        },
+        (error) => {
+          // Handle errors here
+          console.error('Error:', error);
+        }
+      );
+    } else {
+      const updatedArtikelId = lineItem.artikelId;
+      const updatedQuantity = lineItem.kolicina;
+      lineItem.artikelId = updatedArtikelId;
+      lineItem.kolicina = updatedQuantity;
+      this.artikli.forEach((artikel) => {
+        if (artikel.id === lineItem.artikelId) {
+          lineItem.artikel = artikel;
+        }
+      });
+      this.lineItemService.updateLineItem(lineItem);
+    }
+    this.editedLineItemIndex = -1;
+    this.calculateTotalCost();
+  }
+  // Function to cancel editing
+  cancelEditingLineItem() {
+    this.editedLineItemIndex = -1;
+  }
+  createLineItems(invoiceId: number) {
+    this.lineItems$
+      .pipe(
+        take(1), 
+        switchMap((lineItems) => {
+          const modifiedLineItems = lineItems.map((lineItem) => ({
+            ...lineItem,
+            id: 0,
+            artikel: undefined, // Or use delete lineItem.artikel; if needed
+            racunId: invoiceId,
+          }));
+          return this.lineItemService.createLineItems(modifiedLineItems);
+        })
+      )
+      .subscribe(
+        (lineItemsResponse) => {
+          console.log('Line items created/updated:', lineItemsResponse);
+          this.navigateToRoot();
+        },
+        (error) => {
+          console.error('Error:', error);
+        }
+      );
+  }
   calculateTotalCost(): void {
     let totalCost = 0;
-
     this.lineItems$.subscribe((lineItems) => {
       if (lineItems) {
         for (const lineItem of lineItems) {
@@ -168,5 +275,14 @@ onTaskSubmit(): void {
       }
       this.totalCost = totalCost;
     });
+  }
+  isArtikelAlreadySelected(artikelId: number): boolean {
+    let isSelected = false;
+    this.lineItems$.subscribe((lineItems) => {
+      if (lineItems) {
+        isSelected = lineItems.some((lineItem) => lineItem.artikelId === artikelId);
+      }
+    });
+    return isSelected;
   }
 }

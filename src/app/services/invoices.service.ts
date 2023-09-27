@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, catchError, map, tap } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, filter, map, tap } from 'rxjs';
 import { Racun } from '../models/racun.model';
 import { HttpClient } from '@angular/common/http';
 import { RacunVrstica } from '../models/line-item.model';
@@ -60,7 +60,6 @@ export class InvoicesService {
   }
   updateInvoice(invoice: Racun): Observable<Racun> {
     const url = `${this.apiUrl}/${invoice.id}`;
-    
     // Create a payload object that contains both the Racun and RacunVrstica objects
     return this.http.put<Racun>(url, invoice).pipe(
       catchError((error) => {
@@ -68,6 +67,7 @@ export class InvoicesService {
         throw error;
       }),
       tap(() => {
+        console.log("why are you removed?")
         const currentInvoices = this.invoicesSubject.value;
         const updatedIndex = currentInvoices.findIndex((invoice) => invoice.id === invoice.id);
         if (updatedIndex !== -1) {
@@ -77,7 +77,5 @@ export class InvoicesService {
       })
     );
   }
-
-
   
 }

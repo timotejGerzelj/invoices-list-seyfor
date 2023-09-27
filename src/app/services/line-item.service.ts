@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { RacunVrstica } from '../models/line-item.model';
-import { BehaviorSubject, Observable, catchError, map, switchMap, tap } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, map, switchMap, take, tap, toArray } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { InvoicesService } from './invoices.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,16 +11,30 @@ export class LineItemService {
   private lineItemsSubject = new BehaviorSubject<RacunVrstica[]>([]);
   lineItems$ = this.lineItemsSubject.asObservable();
   private apiUrl = 'http://localhost:5102/api/RacunVrstica';
+  
+  lineItemsLength$ = this.lineItems$.pipe(
+    map((lineItems) => lineItems.length)
+  );
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient,
+    private invoiceService: InvoicesService) { }
+
+  setLineItemsToEmpty(){
+    console.log("Emptying")
+    this.lineItemsSubject.next([]);
+  }
   addLineItem(lineItem: RacunVrstica) {
-    console.log('New line item:', lineItem);
-
-    const currentLineItems = this.lineItemsSubject.value;
-    const updatedLineItems = [...currentLineItems, lineItem];
-    console.log('New line items:', lineItem);
-    this.setLineItems(updatedLineItems);
-    }
+    this.lineItemsLength$.pipe(take(1)).subscribe((length) => {
+      lineItem.id = length + 1;
+      this.setLineItems([...this.lineItemsSubject.value, lineItem]);
+    });
+  }
+  updateLineItemNewInvoice(lineItem: RacunVrstica) {
+    const currentTasks = this.lineItemsSubject.value;
+    const updatedItems = currentTasks.map((item) => (item.id === lineItem.id ? lineItem : item));
+    this.setLineItems(updatedItems);
+}
+    
   setLineItems(lineItems: RacunVrstica[]) {
     console.log('New line items:', lineItems);
     this.lineItemsSubject.next(lineItems);
@@ -29,39 +44,66 @@ export class LineItemService {
     return this.lineItemsSubject.getValue();
   }
 
+
   createLineItem(lineItem: RacunVrstica): Observable<RacunVrstica> {
     const headers = { 'Authorization': 'Bearer my-token', 'My-Custom-Header': 'foobar' };
-    console.log(lineItem);
+    let lineItemToAdd = lineItem;
+    if (!lineItemToAdd.racunId) {
+      this.addLineItem(lineItemToAdd); // Add it to the unsaved list
+      return new Observable<RacunVrstica>((observer) => {
+        observer.next(lineItemToAdd); // Return the line item immediately
+        observer.complete();
+      });
+    }
     return this.http.post<RacunVrstica>(this.apiUrl, lineItem, { headers }).pipe(
       catchError((error) => {
         console.error('Create Error:', error);
         throw error; 
       }),
       tap((newRacunVrstica) => {
-        // Update the lineItemsSubject with the newly created line item
+        newRacunVrstica.artikel = lineItemToAdd.artikel;
         const currentItems = this.lineItemsSubject.value;
         currentItems.push(newRacunVrstica);
-        this.setLineItems(currentItems); // Update the observable here
+        this.setLineItems(currentItems); 
+        const racunId = newRacunVrstica.racunId;
+        const racunObservable = this.invoiceService.findInvoiceById(racunId);
+        racunObservable.subscribe(async (racun) => {
+          if (racun) {
+            console.log("Updating ", racun)
+            const totalCost = this.calculateTotalCost();
+            racun.znesek = totalCost;
+            this.invoiceService.updateInvoice(racun);
+          }
+        });
       })
     );
   } 
+
   updateLineItem(lineItem: RacunVrstica): Observable<RacunVrstica> {
-    console.log("updating lineItem, ", lineItem);
     const url = `${this.apiUrl}/${lineItem.id}`;
+    console.log("Hello?, ", lineItem);
     return this.http.put<RacunVrstica>(url, lineItem).pipe(
       catchError((error) => {
         console.error('Edit Error:', error);
         throw error;
       }),
       tap((newLineitem) => {
-        // Update the lineItemsSubject with the newly created line item
-        console.log("to update: ", lineItem);
         const currentTasks = this.lineItemsSubject.value;
         const updatedItems = currentTasks.map((item) => (item.id === lineItem.id ? lineItem : item));
-        console.log("updatedItems");
-        this.setLineItems(updatedItems); // Update the observable here
+        this.setLineItems(updatedItems);
+        console.log("Updating ", newLineitem)
+        const racunId = lineItem.racunId;
+        const racunObservable = this.invoiceService.findInvoiceById(racunId);
+        racunObservable.subscribe(async (racun) => {
+          if (racun) {
+            console.log("Updating ", racun)
+            const totalCost = this.calculateTotalCost();
+            racun.znesek = totalCost;
+            this.invoiceService.updateInvoice(racun); // You need to implement this method
+          }
+        });
       })
-    )
+      )
   }
 
   findLineItemById(lineItemId: number): Observable<RacunVrstica | undefined> {
@@ -89,8 +131,19 @@ export class LineItemService {
       this.lineItemsSubject.next(lineItems);
     });
   }
+  calculateTotalCost(): number {
+    let totalCost = 0;
 
+    this.lineItems$.subscribe((lineItems) => {
+      for (const lineItem of lineItems) {
+        totalCost += lineItem.kolicina * (lineItem.artikel?.cena || 0);
+      }
+    });
+    return totalCost;  
+  }
 
-
-
+  createLineItems(lineItems: RacunVrstica[]): Observable<RacunVrstica[]> {
+    console.log("all line items, ", lineItems);
+    return this.http.post<RacunVrstica[]>(`${this.apiUrl}/Multiple`, lineItems);
+  }
 }
