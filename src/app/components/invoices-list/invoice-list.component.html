@@ -47,7 +47,6 @@
             <th tabindex="0" (click)="sortInvoices('clientName')" class="clickable col-2 col-md-2">Naziv. kupca {{ currentSortColumn === 'clientName' ? (currentSortOrder === 'asc' ? '↑' : '↓') : '' }}</th>
             <th tabindex="0" (click)="sortInvoices('clientAddress')" class="clickable col-2 col-md-2">Naslov kupca {{ currentSortColumn === 'clientAddress' ? (currentSortOrder === 'asc' ? '↑' : '↓') : '' }}</th>
             <th tabindex="0" (click)="sortInvoices('dateOfCreation')" class="clickable col-4 col-md-3">Datum racuna {{ currentSortColumn === 'dateOfCreation' ? (currentSortOrder === 'asc' ? '↑' : '↓') : '' }}</th>
-
           </tr>
         </thead>
         <tbody>

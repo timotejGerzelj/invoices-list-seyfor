@@ -57,8 +57,9 @@ export class LineItemService {
 
   // Ustvari novo vrstico na računu
   createLineItem(lineItem: LineItem): Observable<LineItem> {
-    const headers = { 'Authorization': 'Bearer moj-žeton', 'Moj-prilagojeni-Header': 'foobar' };
+    const headers = { 'Authorization': 'Bearer moj-zeton', 'Moj-prilagojeni-Header': 'foobar' };
     let lineItemToAdd = lineItem;
+    console.log(lineItem);
     if (!lineItemToAdd.invoiceId) {
       this.addLineItem(lineItemToAdd); // Dodaj v seznam neposodobljenih postavk
       return new Observable<LineItem>((observer) => {

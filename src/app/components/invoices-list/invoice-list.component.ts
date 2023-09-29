@@ -16,7 +16,7 @@ import { ClientService } from 'src/app/services/client.service';
   podatke loceno iz back-end ter jih tukaj sestavljam skupaj, ali naj jih veliko
   vecino dobim skupaj z Invoice modelom na katerega so vezani, zdelo se mi je bolj
   ustrezno, da jih locujem, da se jih lahko v prihodnosti uporablja za individualne 
-  operacije
+  operacije, ce bi imel cas bi tudi implementiral paginacijo, ki bi za taksno nalogo bila idealna
 */
 @Component({
   selector: 'app-invoice-list',
@@ -101,12 +101,24 @@ export class InvoiceListComponent {
             const dateA = new Date(a.dateOfCreation);
             const dateB = new Date(b.dateOfCreation);
             compareResult = this.currentSortOrder === 'asc' ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
+          } else if (this.currentSortColumn === 'orgId') {
+            compareResult = this.currentSortOrder === 'asc' ? a.orgId - b.orgId : b.orgId - a.orgId;
+          } else if (this.currentSortColumn === 'organisation') {
+            compareResult = this.organisations[a.orgId - 1].name.localeCompare(this.organisations[b.orgId - 1].name);
+          } else if (this.currentSortColumn === 'price') {
+            compareResult = this.currentSortOrder === 'asc' ? a.price - b.price : b.price - a.price;
+          } else if (this.currentSortColumn === 'clientId') {
+            compareResult = this.currentSortOrder === 'asc' ? a.clientId - b.clientId : b.clientId - a.clientId;
+          } else if (this.currentSortColumn === 'clientName') {
+            compareResult = this.currentSortOrder === 'asc' ? this.customers[b.clientId - 1].name.localeCompare(this.customers[a.clientId - 1].name) : this.customers[a.clientId - 1].name.localeCompare(this.customers[b.clientId - 1].name);
+          } else if (this.currentSortColumn === 'clientAddress') {
+            compareResult = this.currentSortOrder === 'asc'  ? this.customers[a.clientId - 1].address.localeCompare( this.customers[b.clientId - 1].address) : this.customers[b.clientId - 1].address.localeCompare( this.customers[a.clientId - 1].address);
           }
-          // Dodajte preostale stolpce za razvrščanje po potrebi
           return compareResult;
         });
       })
     );
+
   }
 
   // Ob izbiri stranke iz iskalnega polja
@@ -121,12 +133,25 @@ export class InvoiceListComponent {
       map((invoices) => {
         return invoices
           .filter((invoice) => {
-            // Dodajte pogoje filtra po potrebi
+            if (this.selectedCustomerId !== undefined) {
+              if (invoice.clientId != this.selectedCustomerId) {
+                return false;
+              }
+            }
+            if (this.fromDate && this.toDate) {
+              const fromDate = new Date(this.fromDate);
+              const toDate = new Date(this.toDate);
+              const invoiceDate = new Date(invoice.dateOfCreation);
+
+              if (invoiceDate.getTime() < fromDate.getTime() || invoiceDate.getTime() > toDate.getTime()) {
+                return false;
+              }
+            }
             return true; 
           });
       })
     );
-  }
+}
 
   // Počisti filtre in prikaži vse račune
   clearFilters(): void {
