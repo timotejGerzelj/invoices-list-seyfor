@@ -1,4 +1,4 @@
-export interface Stranka {
+export interface Client {
     id: number;
     name: string;
     address: string;

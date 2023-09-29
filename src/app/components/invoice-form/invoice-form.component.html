@@ -2,21 +2,20 @@
   <button class="btn btn-link mb-3" (click)="navigateToRoot()">Prekini</button>
 
   <h2 class="mb-4">{{ invoice.id > -1 ? 'Uredi' : 'Dodaj' }} Racun</h2>
-
+  <div class="mb-3">
+    <label class="form-label">Izberite stranko:</label>
+    <input
+      id="customerFilter"
+      class="form-control"
+      [(ngModel)]="selectedCustomerName"
+      [typeahead]="customers"
+      [typeaheadOptionField]="'name'"
+      (typeaheadOnSelect)="onCustomerSelect($event)"
+      placeholder="Select a customer..."
+    />
+  </div>
   <form [formGroup]="invoiceForm" (ngSubmit)="onSubmitInvoiceForm()">
-    <div class="mb-3">
-      <label for="clientId" class="form-label">Izberite stranko:</label>
-      <input
-        id="customerFilter"
-        class="form-control"
-        [(ngModel)]="selectedCustomerName"
-        [typeahead]="customers"
-        [typeaheadOptionField]="'name'"
-        (typeaheadOnSelect)="onCustomerSelect($event)"
-        placeholder="Select a customer..."
-      />
 
-    </div>
 
     <div class="mb-3">
       <label for="dateOfCreation" class="form-label">Datum izstavljanja:</label>
@@ -53,9 +52,9 @@
                 <td>{{line.articleId}}</td>
                 <td>  
                   <select [(ngModel)]="line.articleId" name="articleIdEdit" id="articleIdEdit" class="form-select" style="width: 100%;">
-                    <option *ngFor="let article of artikli" [value]="article.id" [disabled]="isArtikelAlreadySelected(article.id)">
+                    <option *ngFor="let article of artikli" [value]="article.id" [disabled]="isArticleAlreadySelected(article.id)">
                       {{ article.name }}
-                      <span *ngIf="isArtikelAlreadySelected(article.id) && article.id != invoice.id"> (article že vnesen v ta racun) </span>
+                      <span *ngIf="isArticleAlreadySelected(article.id) && article.id != invoice.id"> (article že vnesen v ta racun) </span>
                     </option>
                   </select>
                 </td>
@@ -91,9 +90,9 @@
     <div class="mb-3 form-group">
       <label for="articleId" class="form-label">Izberite artikel:</label>
       <select formControlName="articleId" id="articleId" class="form-control">
-        <option *ngFor="let article of artikli" [value]="article.id" [disabled]="isArtikelAlreadySelected(article.id)">
+        <option *ngFor="let article of artikli" [value]="article.id" [disabled]="isArticleAlreadySelected(article.id)">
           {{ article.name }}
-          <span *ngIf="isArtikelAlreadySelected(article.id) "> (Ta artikel je že vnesen v temu racunu) </span>
+          <span *ngIf="isArticleAlreadySelected(article.id) "> (Ta artikel je že vnesen v temu racunu) </span>
         </option>
         
       </select>

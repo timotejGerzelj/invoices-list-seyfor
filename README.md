@@ -1,27 +1,47 @@
-# InvoiceSeyforProject
+# Aplikacija za upravljanje racunov v Angular
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 16.2.1.
 
-## Development server
+## Kazalo vsebine
+- [Motivacija](#motivacija)
+- [Začetek](#začetek)
+  - [Namestitev](#namestitev)
+  - [Zagon aplikacije](#zagon-aplikacije)
+    - [Kako zaženete aplikacijo](#kako-zazenete-aplikacijo)
+- [Predpostavke](#predpostavke)
+- [Kaj bi spremenil](#kaj-bi-spremenil)
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+# Angular aplikacija za upravljanje racunov
 
-## Code scaffolding
+A simple Angular front-end application for Comland ToDoApp challenge!
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+## Kazalo vsebine
+- [Motivacija](#motivacija)
+- [Začetek](#začetek)
+  - [Namestitev](#namestitev)
+  - [Zagon aplikacije](#zagon-aplikacije)
+- [Predpostavke](#predpostavke)
+- [Kaj bi spremenil](#kaj-bi-spremenil)
 
-## Build
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+## Motivacija 
 
-## Running unit tests
+Ta projekt je bil ustvarjen kot delovni izziv v okviru postopka za zaposlitev med delovnim tednom. Aplikacija je narejena, za ustvarjanje in urejanje racunov in njenih vrstic. Sestavljena je iz dveh delov: sprednji del v Angularju s Bootstrap za oblikovanje in zadnji del v C# z uporabo Entity Core za obvladovanje podatkovne zbirke. Ta del služi kot demonstracija mojih kompetenc v ogrodju Angular in osnovnega oblikovanja s pomočjo Bootstrapa.
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+## Predpogoji
 
-## Running end-to-end tests
+- Node.js in npm nastavljen 
+- Angular CLI (Command Line Interface).
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+## Začetek
 
-## Further help
+### Namestitev
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+1. Kloniraj ta repository:
+2. `npm install`
+3. `ng serve`
+
+### Predpostavke
+- Brisanje nisem implementiral iz domneve, da ti racuni ne smejo biti izbrisani (tako sem razumel navodila)
+
+### Kaj bi spremenil
+- Bolj modularna implementacija komponente, ki so manj odvisne od funkcij storitev.

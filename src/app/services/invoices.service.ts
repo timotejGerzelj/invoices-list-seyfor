@@ -1,23 +1,23 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, filter, map, tap } from 'rxjs';
-import { Racun } from '../models/racun.model';
+import { Invoice } from '../models/invoice.model';
 import { HttpClient } from '@angular/common/http';
-import { RacunVrstica } from '../models/line-item.model';
+import { LineItem } from '../models/line-item.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class InvoicesService {
   private apiUrl = 'http://localhost:5102/api/Invoice';
-  private invoicesSubject = new BehaviorSubject<Racun[]>([]);
+  private invoicesSubject = new BehaviorSubject<Invoice[]>([]);
   invoices$ = this.invoicesSubject.asObservable();
-  selectedLineItems: RacunVrstica[]
-  setNewLineItems(newLineItems: RacunVrstica[]) {
+  selectedLineItems: LineItem[]
+  setNewLineItems(newLineItems: LineItem[]) {
     this.selectedLineItems = newLineItems;
   }
   constructor(private http: HttpClient) { }
   getAllInvoices(): void {
-    this.http.get<Racun[]>(this.apiUrl)
+    this.http.get<Invoice[]>(this.apiUrl)
       .pipe(
         catchError((error) => {
           console.error('Get All Tasks Error:', error);
@@ -30,15 +30,15 @@ export class InvoicesService {
   }
 
   // Finds a task by its ID in the observable tasks$.
-  findInvoiceById(invoiceId: number): Observable<Racun | undefined> {
+  findInvoiceById(invoiceId: number): Observable<Invoice | undefined> {
     return this.invoices$.pipe(
       map((invoices) => invoices.find((invoice) => invoice.id === invoiceId))
     );
   }
 
-  createInvoice(invoice: Racun): Observable<Racun> {
+  createInvoice(invoice: Invoice): Observable<Invoice> {
     const headers = { 'Authorization': 'Bearer my-token', 'My-Custom-Header': 'foobar' };
-    return this.http.post<Racun>(this.apiUrl, invoice, { headers }).pipe(
+    return this.http.post<Invoice>(this.apiUrl, invoice, { headers }).pipe(
       catchError((error) => {
         console.error('Create Error:', error);
         throw error;
@@ -50,9 +50,9 @@ export class InvoicesService {
       })
     );
   }
-  updateInvoice(updatedInvoice: Racun): Observable<Racun> {
+  updateInvoice(updatedInvoice: Invoice): Observable<Invoice> {
     const url = `${this.apiUrl}/${updatedInvoice.id}`;
-    return this.http.put<Racun>(url, updatedInvoice).pipe(
+    return this.http.put<Invoice>(url, updatedInvoice).pipe(
       catchError((error) => {
         console.error('Edit Error:', error);
         throw error;
