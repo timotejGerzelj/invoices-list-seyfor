@@ -1,15 +1,16 @@
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, Subject, map, switchMap, take } from 'rxjs';
+import { TypeaheadMatch } from 'ngx-bootstrap/typeahead';
+import { Observable, filter, map, switchMap, take } from 'rxjs';
 import { Artikel } from 'src/app/models/artikel.model';
 import { RacunVrstica } from 'src/app/models/line-item.model';
 import { Racun } from 'src/app/models/racun.model';
 import { Stranka } from 'src/app/models/stranka.model';
-import { ArtikelService } from 'src/app/services/artikel.service';
+import { ArtikelService } from 'src/app/services/article.service';
 import { InvoicesService } from 'src/app/services/invoices.service';
 import { LineItemService } from 'src/app/services/line-item.service';
-import { StrankaService } from 'src/app/services/stranka.service';
+import { StrankaService } from 'src/app/services/client.service';
 
 @Component({
   selector: 'app-invoice-form',
@@ -19,16 +20,18 @@ import { StrankaService } from 'src/app/services/stranka.service';
 export class InvoiceFormComponent {
   invoice: Racun;
   artikli: Artikel[];
-  stranke: Stranka[];
-  isDisabled: boolean = false;
+  customers: Stranka[];
   invoiceForm: FormGroup;
   lineItemForm: FormGroup;
-  selectedLineItems: RacunVrstica[] = [];
   lineItems$: Observable<RacunVrstica[]>;
   totalCost: number = 0;
   editedLineItemIndex: number = -1;
+  editedLineItem: RacunVrstica; // Add this property
   lineItemEditForm: FormGroup;
+  selectedCustomerId: number;
+  selectedCustomerName: string = "";
 
+  todayDate: Date;
   constructor(
     private fb: FormBuilder,
     private invoiceService: InvoicesService,
@@ -40,29 +43,24 @@ export class InvoiceFormComponent {
   ) {}
 
   ngOnInit(): void {
+    this.todayDate = new Date();
     this.invoiceForm = this.fb.group({
-      strankaId: [0, [Validators.required]],
-      dateOfCreation: [null, [Validators.required]]
+      dateOfCreation: [null, [Validators.required, this.futureDateValidator()]]
     });
     this.lineItemForm = this.fb.group({
-      artikelId: [0, [Validators.required]], // Update form control name to "strankaId"
-      quantity: [0, [Validators.required, Validators.min(1)]] // Update form control name to "quantity"
+      articleId: [null, [Validators.required]], // Update form control name to "clientId"
+      quantity: [null, [Validators.required, Validators.min(1)]] // Update form control name to "quantity"
     });
     this.lineItemEditForm = this.fb.group({
       artikelIdEdit: [null, [Validators.required]],
-      quantityEdit: [null, [Validators.required, Validators.min(1)]],
+      quantityEdit: [0, [Validators.required, Validators.min(1)]],
     });
     this.lineItemService.setLineItemsToEmpty();
     this.artikli = this.artikelService.artikli;
-    console.log("artikli, ", this.artikli);
     this.route.params.subscribe((params) => {
       const invoiceId = +params['id'];
-      console.log("invoiceId: ", invoiceId);
 
-      this.strankaService.getAllStranke().subscribe((stranke) => {
-        this.stranke = stranke;
-      });
-      this.artikli = this.artikelService.artikli;
+      this.customers = this.strankaService.stranke;
       if (invoiceId) {
         this.invoiceService.findInvoiceById(invoiceId).subscribe((invoice) => {
         if (invoice) {
@@ -72,8 +70,11 @@ export class InvoiceFormComponent {
           const formattedDate = `${invoiceDate.getFullYear()}-${(invoiceDate.getMonth() + 1)
             .toString()
             .padStart(2, '0')}-${invoiceDate.getDate().toString().padStart(2, '0')}`;    
+            this.selectedCustomerId = invoice.clientId
+            const foundArtikel = this.customers.find((customer) => customer.id === invoice.clientId);
+            this.selectedCustomerName = foundArtikel?.name || ''; 
           this.invoiceForm.setValue({
-            strankaId: invoice.strankaId,
+            clientId: invoice.clientId,
             dateOfCreation: formattedDate
           })
           this.lineItems$ = this.lineItemService.lineItems$;
@@ -93,28 +94,34 @@ export class InvoiceFormComponent {
 
     this.calculateTotalCost();
 }
-
 initializeNewInvoice(): void {
   this.invoice = {
     id: 0 ,
     dateOfCreation: new Date().toISOString(),
-    znesek: 0,
+    price: 0,
     orgId: 0,
-    strankaId: 0,
-    lineItems: []
+    clientId: 0 
   };}
   navigateToRoot(): void {
     this.lineItemService.setLineItemsToEmpty()
+    this.totalCost = 0
     this.router.navigate(['/']);
   }
-  
-  onSubmitInvoiceForm() {
+  futureDateValidator() {
+    return (control: AbstractControl): { [key: string]: any } | null => {
+      const selectedDate = new Date(control.value);
+      const currentDate = new Date();
+      if (selectedDate < currentDate) {
+        return { futureDate: true };
+      }
+      return null;
+    };
+  }
+onSubmitInvoiceForm() {
     if (this.invoice.id != 0){
       this.invoice.dateOfCreation = this.invoiceForm.value.dateOfCreation;
-        this.invoice.strankaId = parseInt(this.invoiceForm.value.strankaId);
-        this.invoice.lineItems = [];
-        this.invoice.znesek = this.totalCost;
-        console.log(this.invoice);
+      this.invoice.clientId = this.selectedCustomerId;
+        this.invoice.price = this.totalCost;
         this.invoiceService.updateInvoice(this.invoice).subscribe(
           (response) => {
             console.log('Response:', response);
@@ -127,9 +134,9 @@ initializeNewInvoice(): void {
       }
       else {
         this.invoice.dateOfCreation = this.invoiceForm.value.dateOfCreation;
-        this.invoice.strankaId = this.invoiceForm.value.strankaId;
+        this.invoice.clientId = this.selectedCustomerId;
         this.invoice.orgId = 1;
-        this.invoice.znesek = this.totalCost;
+        this.invoice.price = this.totalCost;
         this.invoiceService.createInvoice(this.invoice).subscribe(
           (response) => {
             console.log('Response:', response);
@@ -143,9 +150,9 @@ initializeNewInvoice(): void {
   setLineItem(invoiceId: number): RacunVrstica {
     const lineItem: RacunVrstica = {
       id: 0,
-      artikelId: 0,
-      racunId: invoiceId,
-      kolicina: 0,
+      articleId: 0,
+      invoiceId: invoiceId,
+      quantity: 0,
     };
     return lineItem;
     }
@@ -153,16 +160,14 @@ initializeNewInvoice(): void {
     //create
     if (this.invoice.id != 0){
       let newRacunVrstica = this.setLineItem(this.invoice.id);
-      newRacunVrstica.artikelId = parseInt(this.lineItemForm.value.artikelId);
-      newRacunVrstica.kolicina = this.lineItemForm.value.quantity;
-      newRacunVrstica.artikel = this.artikli.find((artikel) => artikel.id === newRacunVrstica.artikelId);
-      console.log("Racun artikel: ", newRacunVrstica);
+      newRacunVrstica.articleId = parseInt(this.lineItemForm.value.articleId);
+      newRacunVrstica.quantity = this.lineItemForm.value.quantity;
 
       this.lineItemService.createLineItem(newRacunVrstica).subscribe(
         (response) => {
           // Handle the response here
           console.log('Response:', response);
-          this.isArtikelAlreadySelected(newRacunVrstica.artikelId)
+          this.isArtikelAlreadySelected(newRacunVrstica.articleId)
         },
         (error) => {
           // Handle errors here
@@ -172,76 +177,79 @@ initializeNewInvoice(): void {
     }
     else {
       let newRacunVrstica = this.setLineItem(0);
-      newRacunVrstica.artikelId = parseInt(this.lineItemForm.value.artikelId);
-      newRacunVrstica.artikel = this.artikli.find((artikel) => artikel.id === newRacunVrstica.artikelId);
-      newRacunVrstica.kolicina = this.lineItemForm.value.quantity;
-      console.log("Racun artikel: ", newRacunVrstica);
+      newRacunVrstica.articleId = parseInt(this.lineItemForm.value.articleId);
+      newRacunVrstica.quantity = this.lineItemForm.value.quantity;
       this.lineItemService.addLineItem(newRacunVrstica);
-      this.isArtikelAlreadySelected(newRacunVrstica.artikelId)
+      this.isArtikelAlreadySelected(newRacunVrstica.articleId)
     }
     this.lineItemForm.reset({
-      artikelId: null, 
+      articleId: null, 
       quantity: null,   
     });
     this.lineItemForm.markAsUntouched();
-
-
     this.calculateTotalCost();
   }
   startEditingLineItem(index: number) {
     this.editedLineItemIndex = index;
     this.lineItems$.subscribe((lineItems) => {
       if (lineItems && lineItems.length > index) {
-        const selectedLineItem = lineItems[index];
-        console.log(selectedLineItem);
+        this.editedLineItem = { ...lineItems[index] }; // Keep a copy of the original values
         this.lineItemEditForm.patchValue({
-          artikelIdEdit: selectedLineItem.artikelId,
-          quantityEdit: selectedLineItem.kolicina,
+          artikelIdEdit: this.editedLineItem.articleId,
+          quantityEdit: this.editedLineItem.quantity,
         });
       }
     });
   }
-  saveEditedLineItem(lineItem: RacunVrstica) {
-    if (this.invoice.id) {
-      const updatedArtikelId = lineItem.artikelId;
-      const updatedQuantity = lineItem.kolicina;
-      lineItem.artikelId = updatedArtikelId;
-      lineItem.kolicina = updatedQuantity;
-      this.artikli.forEach((artikel) => {
-        if (artikel.id === lineItem.artikelId) {
-          lineItem.artikel = artikel;
-        }
-      });
-      this.lineItemService.updateLineItem(lineItem).subscribe(
-        (response) => {
-          // Handle the response here
-          console.log('Response:', response);
-        },
-        (error) => {
-          // Handle errors here
-          console.error('Error:', error);
-        }
-      );
-    } else {
-      const updatedArtikelId = lineItem.artikelId;
-      const updatedQuantity = lineItem.kolicina;
-      lineItem.artikelId = updatedArtikelId;
-      lineItem.kolicina = updatedQuantity;
-      this.artikli.forEach((artikel) => {
-        if (artikel.id === lineItem.artikelId) {
-          lineItem.artikel = artikel;
-        }
-      });
-      this.lineItemService.updateLineItem(lineItem);
-    }
+    saveEditedLineItem(lineItem: RacunVrstica) {
+     if( !this.areLineItemsEqual(this.editedLineItem , lineItem)) {
+      this.calculateTotalCost();
+      if (this.invoice.id) {
+        const updatedArtikelId = lineItem.articleId;
+        const updatedQuantity = lineItem.quantity;
+        lineItem.articleId = updatedArtikelId;
+        lineItem.quantity = updatedQuantity;
+        this.lineItemService.updateLineItem(lineItem).subscribe(
+          (response) => {
+          },
+          (error) => {
+            // Handle errors here
+            console.error('Error:', error);
+          }
+        );
+        console.log("this.totalCost updateLineItem ", this.totalCost)
+        let invoicePrice = this.totalCost
+        this.invoice.price = invoicePrice;
+        
+        this.invoiceService.updateInvoice(this.invoice).subscribe(
+          (response) => {
+            console.log('Response:', response);
+            this.totalCost = invoicePrice;
+          },
+          (error) => {
+            console.error('Error:', error);
+          }
+        );
+      } else {
+        const updatedArtikelId = lineItem.articleId;
+        const updatedQuantity = lineItem.quantity;
+        lineItem.articleId = updatedArtikelId;
+        lineItem.quantity = updatedQuantity;
+        console.log("this.totalCost updateLineItem ", this.totalCost)
+        this.lineItemService.updateLineItem(lineItem);
+      }
+     }
     this.editedLineItemIndex = -1;
-    this.calculateTotalCost();
   }
   // Function to cancel editing
-  cancelEditingLineItem() {
-    this.editedLineItemIndex = -1;
-  }
-  createLineItems(invoiceId: number) {
+  areLineItemsEqual(lineItem1: RacunVrstica, lineItem2: RacunVrstica): boolean {
+    return (
+      lineItem1.articleId === lineItem2.articleId &&
+      lineItem1.quantity === lineItem2.quantity
+    );
+  
+    }
+    createLineItems(invoiceId: number) {
     this.lineItems$
       .pipe(
         take(1), 
@@ -249,15 +257,13 @@ initializeNewInvoice(): void {
           const modifiedLineItems = lineItems.map((lineItem) => ({
             ...lineItem,
             id: 0,
-            artikel: undefined, // Or use delete lineItem.artikel; if needed
-            racunId: invoiceId,
+            invoiceId: invoiceId,
           }));
           return this.lineItemService.createLineItems(modifiedLineItems);
         })
       )
       .subscribe(
         (lineItemsResponse) => {
-          console.log('Line items created/updated:', lineItemsResponse);
           this.navigateToRoot();
         },
         (error) => {
@@ -266,23 +272,33 @@ initializeNewInvoice(): void {
       );
   }
   calculateTotalCost(): void {
-    let totalCost = 0;
-    this.lineItems$.subscribe((lineItems) => {
-      if (lineItems) {
-        for (const lineItem of lineItems) {
-          totalCost += lineItem.kolicina * (lineItem.artikel?.cena || 0);
-        }
-      }
-      this.totalCost = totalCost;
-    });
+    this.lineItems$
+      .pipe(
+        filter((lineItems) => !!lineItems), // Filter out null or undefined
+        map((lineItems) => {
+          let totalCost = 0;
+          for (const lineItem of lineItems) {
+            totalCost += lineItem.quantity * (this.artikli[lineItem.articleId - 1]?.price || 0);
+          }
+          return totalCost;
+        })
+      )
+      .subscribe((totalCost) => {
+        this.totalCost = totalCost;
+      });
   }
-  isArtikelAlreadySelected(artikelId: number): boolean {
+  
+  isArtikelAlreadySelected(articleId: number): boolean {
     let isSelected = false;
     this.lineItems$.subscribe((lineItems) => {
       if (lineItems) {
-        isSelected = lineItems.some((lineItem) => lineItem.artikelId === artikelId);
+        isSelected = lineItems.some((lineItem) => lineItem.articleId === articleId);
       }
     });
     return isSelected;
   }
+  onCustomerSelect(event: TypeaheadMatch): void {
+    this.selectedCustomerId = event.item.id;
+    this.selectedCustomerName = event.item.name;
+  } 
 }

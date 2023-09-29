@@ -6,12 +6,14 @@ import { InvoiceListComponent } from './components/invoices-list/invoice-list.co
 import { HttpClientModule } from '@angular/common/http';
 import { InvoiceFormComponent } from './components/invoice-form/invoice-form.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { TypeaheadModule } from 'ngx-bootstrap/typeahead';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 @NgModule({
   declarations: [
     AppComponent,
     InvoiceFormComponent,
-    InvoiceListComponent,
+    InvoiceListComponent
   ],
   imports: [
     BrowserModule,
@@ -19,6 +21,8 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     HttpClientModule,
     ReactiveFormsModule,
     FormsModule,
+    TypeaheadModule.forRoot(),
+    BrowserAnimationsModule,
   ],
   providers: [],
   bootstrap: [AppComponent]

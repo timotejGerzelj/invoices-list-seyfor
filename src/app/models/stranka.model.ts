@@ -1,5 +1,5 @@
 export interface Stranka {
     id: number;
-    ime: string;
-    naslov: string;
+    name: string;
+    address: string;
 }

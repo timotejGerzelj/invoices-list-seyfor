@@ -1,30 +1,39 @@
-<div>
-  <button class="btn btn-secondary me-2" (click)="navigateToRoot()">Cancel</button>
+<div class="container"> 
+  <button class="btn btn-link mb-3" (click)="navigateToRoot()">Prekini</button>
 
   <h2 class="mb-4">{{ invoice.id > -1 ? 'Uredi' : 'Dodaj' }} Racun</h2>
 
   <form [formGroup]="invoiceForm" (ngSubmit)="onSubmitInvoiceForm()">
     <div class="mb-3">
-      <label for="strankaId" class="form-label">Select Customer:</label>
-      <select formControlName="strankaId" id="strankaId" class="form-select">
-        <option *ngFor="let stranka of stranke" [value]="stranka.id">{{ stranka.ime }}</option>
-      </select>
+      <label for="clientId" class="form-label">Izberite stranko:</label>
+      <input
+        id="customerFilter"
+        class="form-control"
+        [(ngModel)]="selectedCustomerName"
+        [typeahead]="customers"
+        [typeaheadOptionField]="'name'"
+        (typeaheadOnSelect)="onCustomerSelect($event)"
+        placeholder="Select a customer..."
+      />
+
     </div>
 
     <div class="mb-3">
       <label for="dateOfCreation" class="form-label">Datum izstavljanja:</label>
-      <input type="date" formControlName="dateOfCreation" id="dateOfCreation" class="form-control">
+      <input class="form-control m-input pl-6" type="date" 
+      [min]="todayDate" formControlName="dateOfCreation" id="dateOfCreation" class="form-control">
     </div>
   </form>
 
+  <hr class="my-4">
 
     <div class="table-responsive">
       <table class="table table-bordered">
         <thead>
           <tr>
             <th>#</th>
-            <th>Artikel ID</th>
-            <th>Artikel Ime</th>
+            <th>ID Artikla</th>
+            <th>Ime Artikla</th>
             <th>Kvantiteta</th>
             <th>Cena</th>
             <th></th>
@@ -35,29 +44,32 @@
           <tr *ngFor="let line of lineItems$ | async; let i = index">
               <td>{{ i + 1 }}</td>
               <ng-container *ngIf="editedLineItemIndex !== i; else editMode">
-                <td>{{ line.artikelId }}</td>
-                <td>{{ line.artikel?.ime }}</td>
-                <td>{{ line.kolicina }}</td>
-                <td>{{ line.artikel?.cena }}€</td>
+                <td>{{ artikli[line.articleId - 1].id }}</td>
+                <td>{{ artikli[line.articleId - 1].name }}</td>
+                <td>{{ line.quantity }}</td>
+                <td>{{ artikli[line.articleId - 1].price }}€</td>
               </ng-container>
               <ng-template #editMode>
-                <td>
-                  <select [(ngModel)]="line.artikelId" name="artikelIdEdit" id="artikelIdEdit" class="form-select" style="width: 100%;">
-                    <option *ngFor="let artikel of artikli" [value]="artikel.id" [disabled]="isArtikelAlreadySelected(artikel.id)">
-                      {{ artikel.ime }}
-                      <span *ngIf="isArtikelAlreadySelected(artikel.id) && artikel.id != invoice.id"> (Artikel že vnesen v ta racun) </span>
+                <td>{{line.articleId}}</td>
+                <td>  
+                  <select [(ngModel)]="line.articleId" name="articleIdEdit" id="articleIdEdit" class="form-select" style="width: 100%;">
+                    <option *ngFor="let article of artikli" [value]="article.id" [disabled]="isArtikelAlreadySelected(article.id)">
+                      {{ article.name }}
+                      <span *ngIf="isArtikelAlreadySelected(article.id) && article.id != invoice.id"> (article že vnesen v ta racun) </span>
                     </option>
                   </select>
                 </td>
                 <td>
-                  <input type="number" [(ngModel)]="line.kolicina" name="quantityEdit" style="width: 100%;">
+                  <input type="number" min="1" [(ngModel)]="line.quantity" name="quantityEdit" style="width: 100%;">
                   <div *ngIf="lineItemForm.get('quantityEdit')?.invalid && lineItemForm.get('quantityEdit')?.touched" class="text-danger">
                     Prosim vnesite vsaj 1  
                   </div>
                 </td>
                 <td>
+                  Ureja se
+                </td>
+                <td>
                   <button class="btn btn-success me-2" (click)="saveEditedLineItem(line)">Shrani</button>
-                  <button class="btn btn-danger" (click)="cancelEditingLineItem()">Prekini</button>
                 </td>
               </ng-template>
               
@@ -65,47 +77,42 @@
                 <button *ngIf="editedLineItemIndex === -1" class="btn btn-primary me-2" (click)="startEditingLineItem(i)">Uredi vrstico</button>
                 <!-- Add other buttons or actions here as needed -->
               </td>
-            </tr>          
-        </tbody>
-
-        <div class="total-cost mt-4">
-          Skupna cena: {{ totalCost }} €
-        </div>
-      
+            </tr>  
+            <tr class="total-cost mt-4">Skupna Cena: {{ totalCost }} €
+            </tr>        
+        </tbody>      
       </table>
     </div>
 
 
-
-  <h3 class="mt-4">{{ invoice.id > -1 ? 'Uredi' : 'Dodaj' }} racun vrstico</h3>
+  <h3 class="mt-4">{{ invoice.id > -1 ? 'Dodaj' : 'Uredi' }} vrstico</h3>
 
   <form [formGroup]="lineItemForm" (ngSubmit)="onLineItemSubmit()">
-    <div class="mb-3">
-      <label for="artikelId" class="form-label">Izberite Artikel:</label>
-      <select formControlName="artikelId" id="artikelId" class="form-select">
-        <option *ngFor="let artikel of artikli" [value]="artikel.id" [disabled]="isArtikelAlreadySelected(artikel.id)">
-          {{ artikel.ime }}
-          <span *ngIf="isArtikelAlreadySelected(artikel.id) && artikel.id != invoice.id "> (Ta artikel je že vnesen v temu racunu) </span>
+    <div class="mb-3 form-group">
+      <label for="articleId" class="form-label">Izberite artikel:</label>
+      <select formControlName="articleId" id="articleId" class="form-control">
+        <option *ngFor="let article of artikli" [value]="article.id" [disabled]="isArtikelAlreadySelected(article.id)">
+          {{ article.name }}
+          <span *ngIf="isArtikelAlreadySelected(article.id) "> (Ta artikel je že vnesen v temu racunu) </span>
         </option>
         
       </select>
     </div>
 
-    <div class="mb-3">
+    <div class="mb-3 form-group">
       <label for="quantity" class="form-label">Kvantiteta:</label>
-      <input required type="number" formControlName="quantity" id="quantity" class="form-control">
+      <input required min="1" type="number" formControlName="quantity" id="quantity" class="form-control">
       <div *ngIf="lineItemForm.get('quantity')?.invalid && lineItemForm.get('quantity')?.touched" class="text-danger">
         Prosim vnesite vsaj 1  
       </div>
     </div>
-
-    <button [disabled]="!lineItemForm.valid" class="btn btn-primary">
-      {{ invoice.id > -1 ? 'Uredi' : 'Dodaj' }} Vrstico
-    </button>
   </form>
-
-
-  <button [disabled]="invoiceForm.invalid" type="submit" (click)="onSubmitInvoiceForm()" class="btn btn-primary">
-    {{ invoice.id > 0 ? 'Uredi' : 'Ustvari nov ' }} racun
-  </button>
+  <div class="d-flex gap-4">
+    <button  (click)="onLineItemSubmit()" [disabled]="!lineItemForm.valid" class="btn btn-primary">
+      {{ invoice.id > -1 ? 'Dodaj' : 'Uredi' }} Vrstico
+    </button>
+    <button [disabled]="invoiceForm.invalid" type="submit" (click)="onSubmitInvoiceForm()" class="btn btn-primary">
+      {{ invoice.id > 0 ? 'Uredi' : 'Ustvari nov ' }} racun
+    </button>
+</div>
 </div>

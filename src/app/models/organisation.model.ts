@@ -1,4 +1,4 @@
-export interface Organizacija {
+export interface Organisation {
     id: number;
     name: string;
     description: string;

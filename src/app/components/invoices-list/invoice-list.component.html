@@ -3,33 +3,33 @@
     <button [routerLink]="['/invoiceform/newinvoice']" class="btn btn-primary me-2">Nov Racun</button>
   
     <!-- Filter Form -->
-    <form class="mb-3">
-        <div class="col-md-4">
-            <div class="mb-3">
-              <label for="customerFilter" class="form-label">Filter by Customer:</label>
-              <select id="customerFilter" class="form-select" [(ngModel)]="filterByCustomer" [ngModelOptions]="{ standalone: true }">
-                <option value="">All Customers</option>
-                <option *ngFor="let stranka of customers" [value]="stranka.id">{{ stranka.ime }}</option>
-              </select>
-            </div>
-          </div>
+    <form class="d-flex flex-wrap flex-column flex-sm-row pb-4 gap-4">
+        <div class="col-4">
+          <label for="customerFilter" class="form-label">Filter by Customer:</label>
+          <input
+            id="customerFilter"
+            class="form-control"
+            [(ngModel)]="selectedCustomerName"
+            [ngModelOptions]="{ standalone: true }"
+            [typeahead]="customers"
+            [typeaheadOptionField]="'name'"
+            (typeaheadOnSelect)="onCustomerSelect($event)"
+            placeholder="Select a customer..."
+          />
+                    </div>
           
           <!-- From Date -->
-          <div class="col-md-4">
-            <div class="mb-3">
+          <div class="col-4">
               <label for="fromDate" class="form-label">From Date:</label>
               <input type="date" id="fromDate" class="form-control" [(ngModel)]="fromDate" [ngModelOptions]="{ standalone: true }">
-            </div>
           </div>
           
           <!-- To Date -->
-          <div class="col-md-4">
-            <div class="mb-3">
+          <div class="col-4">
               <label for="toDate" class="form-label">To Date:</label>
               <input type="date" id="toDate" class="form-control" [(ngModel)]="toDate" [ngModelOptions]="{ standalone: true }">
-            </div>
           </div>
-              <div class="d-flex">
+              <div class="d-flex col-12">
       <button type="button" class="btn btn-primary me-2" (click)="applyFilters()">Apply Filters</button>
       <button type="button" class="btn btn-secondary" (click)="clearFilters()">Clear Filters</button>
     </div>
@@ -39,19 +39,26 @@
       <table class="table table-bordered" *ngIf="invoices$ | async as invoices;">
         <thead class="table-header table-secondary">
           <tr>
-            <th tabindex="0" class="clickable col-2 col-md-1">#</th>
-            <th tabindex="0" class="clickable col-2 col-md-1">St. organizacije</th>
-            <th tabindex="0" class="clickable col-4 col-md-3">Znesek</th>
-            <th tabindex="0" class="col-2 col-md-2">St. stranke</th>
-            <th tabindex="0" class="clickable col-4 col-md-3">Date of Creation</th>
+            <th tabindex="0" (click)="sortInvoices('id')" class="clickable col-2 col-md-1"># {{ currentSortColumn === 'id' ? (currentSortOrder === 'asc' ? '↑' : '↓') : '' }}</th>
+            <th tabindex="0" (click)="sortInvoices('orgId')" class="clickable col-2 col-md-1">St. organizacije {{ currentSortColumn === 'orgId' ? (currentSortOrder === 'asc' ? '↑' : '↓') : '' }}</th>
+            <th tabindex="0" (click)="sortInvoices('organisation')" class="clickable col-4 col-md-3">Ime Organizacije {{ currentSortColumn === 'organisation' ? (currentSortOrder === 'asc' ? '↑' : '↓') : '' }}</th>
+            <th tabindex="0" (click)="sortInvoices('price')" class="clickable col-4 col-md-3">Znesek {{ currentSortColumn === 'price' ? (currentSortOrder === 'asc' ? '↑' : '↓') : '' }}</th>
+            <th tabindex="0" (click)="sortInvoices('clientId')" class="clickable col-2 col-md-2">St. kupca {{ currentSortColumn === 'clientId' ? (currentSortOrder === 'asc' ? '↑' : '↓') : '' }}</th>
+            <th tabindex="0" (click)="sortInvoices('clientName')" class="clickable col-2 col-md-2">Naziv. kupca {{ currentSortColumn === 'clientName' ? (currentSortOrder === 'asc' ? '↑' : '↓') : '' }}</th>
+            <th tabindex="0" (click)="sortInvoices('clientAddress')" class="clickable col-2 col-md-2">Naslov kupca {{ currentSortColumn === 'clientAddress' ? (currentSortOrder === 'asc' ? '↑' : '↓') : '' }}</th>
+            <th tabindex="0" (click)="sortInvoices('dateOfCreation')" class="clickable col-4 col-md-3">Datum racuna {{ currentSortColumn === 'dateOfCreation' ? (currentSortOrder === 'asc' ? '↑' : '↓') : '' }}</th>
+
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let invoice of invoices$ | async">
             <td>{{ invoice.id }}</td>
             <td>{{ invoice.orgId }}</td>
-            <td>{{ invoice.znesek }}</td>
-            <td>{{ invoice.strankaId }}</td>
+            <td *ngIf="invoice.orgId  && organisations.length" >{{ organisations[invoice.orgId - 1].name }}</td>
+            <td>{{ invoice.price }}</td>
+            <td>{{ invoice?.clientId }}</td>
+            <td *ngIf="invoice.clientId && customers.length">{{ customers[invoice.clientId - 1].name }}</td>
+            <td *ngIf="invoice.clientId  && customers.length" >{{ customers[invoice.clientId - 1].address }}</td>
             <td>{{ invoice.dateOfCreation }}</td>
             <td>
               <button [routerLink]="['/invoiceform', invoice.id]" class="btn btn-primary me-2">Uredi Racun</button>

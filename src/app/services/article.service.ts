@@ -7,13 +7,15 @@ import { Artikel } from '../models/artikel.model';
   providedIn: 'root'
 })
 export class ArtikelService {
-  private apiUrl = 'http://localhost:5102/api/Artikel'
+  private apiUrl = 'http://localhost:5102/api/Article'
   constructor(private http: HttpClient) { }
 
   private artikelSubject = new BehaviorSubject<Artikel[]>([]);
-  artikli$ = this.artikelSubject.asObservable();
-  artikli: Artikel[];
+  artikli: Artikel[] = [];
   getAllArtikli(): void {
+    if (this.artikli.length === 0){
+
+    
     this.http.get<Artikel[]>(this.apiUrl)
       .pipe(
         catchError((error) => {
@@ -22,19 +24,10 @@ export class ArtikelService {
         })
       )
       .subscribe((artikli) => {
-        console.log(artikli)
         this.artikli = artikli;
         this.artikelSubject.next(artikli);
-        console.log(this.artikli$);
       });
-  }
-    // Finds a task by its ID in the observable tasks$.
-    findArtikelById(artikelId: number): Observable<Artikel | undefined> {
-      console.log("invoiceId")
-      return this.artikli$.pipe(
-        map((artikli) => artikli.find((artikel) => artikel.id === artikelId))
-      );
     }
-
+  }
 
 }

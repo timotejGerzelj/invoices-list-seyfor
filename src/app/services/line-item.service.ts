@@ -3,6 +3,7 @@ import { RacunVrstica } from '../models/line-item.model';
 import { BehaviorSubject, Observable, catchError, map, switchMap, take, tap, toArray } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { InvoicesService } from './invoices.service';
+import { Artikel } from '../models/artikel.model';
 
 @Injectable({
   providedIn: 'root'
@@ -10,8 +11,8 @@ import { InvoicesService } from './invoices.service';
 export class LineItemService {
   private lineItemsSubject = new BehaviorSubject<RacunVrstica[]>([]);
   lineItems$ = this.lineItemsSubject.asObservable();
-  private apiUrl = 'http://localhost:5102/api/RacunVrstica';
-  
+  private apiUrl = 'http://localhost:5102/api/LineItem';
+  totalCost = 0;
   lineItemsLength$ = this.lineItems$.pipe(
     map((lineItems) => lineItems.length)
   );
@@ -20,7 +21,6 @@ export class LineItemService {
     private invoiceService: InvoicesService) { }
 
   setLineItemsToEmpty(){
-    console.log("Emptying")
     this.lineItemsSubject.next([]);
   }
   addLineItem(lineItem: RacunVrstica) {
@@ -36,7 +36,6 @@ export class LineItemService {
 }
     
   setLineItems(lineItems: RacunVrstica[]) {
-    console.log('New line items:', lineItems);
     this.lineItemsSubject.next(lineItems);
   }
   
@@ -44,11 +43,10 @@ export class LineItemService {
     return this.lineItemsSubject.getValue();
   }
 
-
   createLineItem(lineItem: RacunVrstica): Observable<RacunVrstica> {
     const headers = { 'Authorization': 'Bearer my-token', 'My-Custom-Header': 'foobar' };
     let lineItemToAdd = lineItem;
-    if (!lineItemToAdd.racunId) {
+    if (!lineItemToAdd.invoiceId) {
       this.addLineItem(lineItemToAdd); // Add it to the unsaved list
       return new Observable<RacunVrstica>((observer) => {
         observer.next(lineItemToAdd); // Return the line item immediately
@@ -61,17 +59,13 @@ export class LineItemService {
         throw error; 
       }),
       tap((newRacunVrstica) => {
-        newRacunVrstica.artikel = lineItemToAdd.artikel;
         const currentItems = this.lineItemsSubject.value;
         currentItems.push(newRacunVrstica);
         this.setLineItems(currentItems); 
-        const racunId = newRacunVrstica.racunId;
-        const racunObservable = this.invoiceService.findInvoiceById(racunId);
+        const invoiceId = newRacunVrstica.invoiceId;
+        const racunObservable = this.invoiceService.findInvoiceById(invoiceId);
         racunObservable.subscribe(async (racun) => {
           if (racun) {
-            console.log("Updating ", racun)
-            const totalCost = this.calculateTotalCost();
-            racun.znesek = totalCost;
             this.invoiceService.updateInvoice(racun);
           }
         });
@@ -81,24 +75,19 @@ export class LineItemService {
 
   updateLineItem(lineItem: RacunVrstica): Observable<RacunVrstica> {
     const url = `${this.apiUrl}/${lineItem.id}`;
-    console.log("Hello?, ", lineItem);
     return this.http.put<RacunVrstica>(url, lineItem).pipe(
       catchError((error) => {
         console.error('Edit Error:', error);
         throw error;
       }),
-      tap((newLineitem) => {
+      tap(() => {
         const currentTasks = this.lineItemsSubject.value;
         const updatedItems = currentTasks.map((item) => (item.id === lineItem.id ? lineItem : item));
         this.setLineItems(updatedItems);
-        console.log("Updating ", newLineitem)
-        const racunId = lineItem.racunId;
-        const racunObservable = this.invoiceService.findInvoiceById(racunId);
+        const invoiceId = lineItem.invoiceId;
+        const racunObservable = this.invoiceService.findInvoiceById(invoiceId);
         racunObservable.subscribe(async (racun) => {
           if (racun) {
-            console.log("Updating ", racun)
-            const totalCost = this.calculateTotalCost();
-            racun.znesek = totalCost;
             this.invoiceService.updateInvoice(racun); // You need to implement this method
           }
         });
@@ -117,8 +106,8 @@ export class LineItemService {
     currentTasks.push(lineItem);
     this.lineItemsSubject.next(currentTasks);
   }
-  GetRacunLineItemById(racunId: number): void  {
-    const url = `http://localhost:5102/api/Racun/${racunId}/RacunVrstica`;
+  GetRacunLineItemById(invoiceId: number): void  {
+    const url = `http://localhost:5102/api/Invoice/${invoiceId}/LineItem`;
     this.http.get<RacunVrstica[]>(url).pipe(
       catchError((error) => {
         console.error('Get All Tasks Error:', error);
@@ -127,23 +116,11 @@ export class LineItemService {
     )
     .subscribe((lineItems) => {
 
-      console.log("lineItems, ", lineItems)
       this.lineItemsSubject.next(lineItems);
     });
   }
-  calculateTotalCost(): number {
-    let totalCost = 0;
-
-    this.lineItems$.subscribe((lineItems) => {
-      for (const lineItem of lineItems) {
-        totalCost += lineItem.kolicina * (lineItem.artikel?.cena || 0);
-      }
-    });
-    return totalCost;  
-  }
 
   createLineItems(lineItems: RacunVrstica[]): Observable<RacunVrstica[]> {
-    console.log("all line items, ", lineItems);
     return this.http.post<RacunVrstica[]>(`${this.apiUrl}/Multiple`, lineItems);
   }
 }

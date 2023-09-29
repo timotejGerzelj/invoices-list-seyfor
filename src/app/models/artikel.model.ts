@@ -1,6 +1,6 @@
 export interface Artikel {
     id: number;
-    ime: string;
-    cena: number;
+    name: string;
+    price: number;
   }
   

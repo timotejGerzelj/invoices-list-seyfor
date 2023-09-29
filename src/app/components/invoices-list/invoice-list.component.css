@@ -8,8 +8,8 @@
     cursor: pointer;
   }
   .table-bordered {
-    border: 1px solid #ddd; /* Add borders to create a box-like appearance */
+    border: 1px solid #ddd; 
   }
   .table tr, .table th, .table td {
-    border: 1px solid #ddd; /* Add borders to create a box-like appearance */
+    border: 1px solid #ddd;
   }

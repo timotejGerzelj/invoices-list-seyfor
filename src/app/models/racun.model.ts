@@ -1,12 +1,12 @@
 import { RacunVrstica } from "./line-item.model";
 import { Organizacija } from "./organizacija.model";
+import { Stranka } from "./stranka.model";
 
 export interface Racun {
     id: number;
     dateOfCreation: string;
-    znesek: number;
+    price: number;
     orgId: number;
-    organizacija?: Organizacija;
-    strankaId: number;
-    lineItems: RacunVrstica[];
+    Organisation?: Organizacija;
+    clientId: number;
   }

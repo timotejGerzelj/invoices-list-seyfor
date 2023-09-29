@@ -1,12 +1,16 @@
 import { Component } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, Subject, debounceTime, distinctUntilChanged, map, of, switchMap } from 'rxjs';
+import { TypeaheadMatch } from 'ngx-bootstrap/typeahead';
+import { BehaviorSubject, Observable, map, of } from 'rxjs';
+import { Organisation } from 'src/app/models/organisation.model';
 import { Racun } from 'src/app/models/racun.model';
 import { Stranka } from 'src/app/models/stranka.model';
-import { ArtikelService } from 'src/app/services/artikel.service';
+import { ArtikelService } from 'src/app/services/article.service';
 import { InvoicesService } from 'src/app/services/invoices.service';
 import { LineItemService } from 'src/app/services/line-item.service';
-import { StrankaService } from 'src/app/services/stranka.service';
+import { OrganisationService } from 'src/app/services/organisation.service';
+import { StrankaService } from 'src/app/services/client.service';
 
 @Component({
   selector: 'app-invoice-list',
@@ -14,9 +18,8 @@ import { StrankaService } from 'src/app/services/stranka.service';
   styleUrls: ['./invoice-list.component.css']
 })
 export class InvoiceListComponent {
-  filterByCustomerSearch: string = '';
   customers: Stranka[] = []; // Replace 'Customer' with your actual customer type
-  private searchTerms = new Subject<string>();
+  organisations: Organisation[] = [];
   invoices$: Observable<Racun[]>;
   filterByCustomer: number | undefined;
   fromDate: Date | null = null; // Filter by invoice date range
@@ -24,118 +27,127 @@ export class InvoiceListComponent {
   sortField: string | null = null; // Field to sort by
   sortDirection: 'asc' | 'desc' | null = null;
   searchByCustomers$ = new BehaviorSubject<string>('');
-/*              <input
-  id="customerFilter"
-  class="form-control"
-  type="text"
-  [(ngModel)]="filterByCustomerSearch"
-  [ngbTypeahead]="searchCustomers"
-  [inputFormatter]="formatter"
-
-  /> */
+  currentSortColumn: string = 'id';
+  currentSortOrder: 'asc' | 'desc' = 'asc';
+  filterForm: FormGroup;
+  selectedCustomerId: number;
+  selectedCustomerName: string = "";
 
   constructor(
     private invoiceService: InvoicesService,
     private artikelService: ArtikelService,
     private strankaService: StrankaService,
     private lineItemService: LineItemService,
+    private organisationService: OrganisationService,
     private router: Router,
+    private fb: FormBuilder
     ) {
-  
-      this.searchTerms
-      .pipe(
-        debounceTime(300), // Wait for 300ms pause in events
-        distinctUntilChanged(), // Ignore if the search term hasn't changed
-        switchMap((term: string) => this.searchCustomers(term)) // Switch to new observable each time the term changes
-      )
-      .subscribe((customers: Stranka[]) => {
-        this.customers = customers;
+      this.filterForm = this.fb.group({
+        fromDate: [null, Validators.required],
+        toDate: [null, Validators.required],
       });
-
     }
+
 
     ngOnInit(): void {
       this.invoiceService.getAllInvoices();
       this.invoices$ = this.invoiceService.invoices$;
       this.artikelService.getAllArtikli();
       this.strankaService.getAllStranke().subscribe((stranke) => {
-        console.log(stranke);
         this.customers = stranke;
-        console.log(this.customers);
+        this.strankaService.stranke = stranke;
       });
-      this.customers = this.strankaService.stranke;
+      this.organisationService.getAllOrganisations().subscribe((organisations) =>
+      {
+        this.organisations = organisations;
+      });
       this.lineItemService.setLineItemsToEmpty()
-    }
-    search(term: string): void {
-      this.searchTerms.next(term);
     }
     searchCustomers(term: string): Observable<Stranka[]> {
       const filteredCustomers = this.customers.filter(customer =>
-        customer.ime.toLowerCase().includes(term.toLowerCase())
+        customer.name.toLowerCase().includes(term.toLowerCase())
       );
-  
-      // Return the filtered results as an observable
       return of(filteredCustomers);
       }
-  
-    // Formatter function for the input field (to display the selected customer's name)
-    formatter = (customer: Stranka) => customer.ime;
 
-  
-
+    sortInvoices(column: string): void {
+      if (this.currentSortColumn === column) {
+        this.currentSortOrder = this.currentSortOrder === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.currentSortColumn = column;
+        this.currentSortOrder = 'asc'; // Default to ascending order when changing column.
+      }
+      this.invoices$ = this.sortInvoicesArray(this.invoices$);
+    }
+    
+    private sortInvoicesArray(invoices$: Observable<Racun[]>): Observable<Racun[]> {
+      return invoices$.pipe(
+        map((invoices) => {
+          return invoices.sort((a, b) => {
+            let compareResult = 0;
+            if (this.currentSortColumn === 'id') {
+              compareResult = this.currentSortOrder === 'asc' ? a.id - b.id : b.id - a.id;
+            } else if (this.currentSortColumn === 'dateOfCreation') {
+              const dateA = new Date(a.dateOfCreation);
+              const dateB = new Date(b.dateOfCreation);
+              compareResult = this.currentSortOrder === 'asc' ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
+            } else if (this.currentSortColumn === 'orgId') {
+              compareResult = this.currentSortOrder === 'asc' ? a.orgId - b.orgId : b.orgId - a.orgId;
+            } else if (this.currentSortColumn === 'organisation') {
+              compareResult = this.organisations[a.orgId - 1].name.localeCompare(this.organisations[b.orgId - 1].name);
+            } else if (this.currentSortColumn === 'price') {
+              compareResult = this.currentSortOrder === 'asc' ? a.price - b.price : b.price - a.price;
+            } else if (this.currentSortColumn === 'clientId') {
+              compareResult = this.currentSortOrder === 'asc' ? a.clientId - b.clientId : b.clientId - a.clientId;
+            } else if (this.currentSortColumn === 'clientName') {
+              compareResult = this.customers[a.clientId - 1].name.localeCompare(this.customers[b.clientId - 1].name);
+            } else if (this.currentSortColumn === 'clientAddress') {
+              compareResult = this.customers[a.clientId - 1].address.localeCompare( this.customers[b.clientId - 1].address);
+            } 
+            return compareResult;
+          });
+        })
+      );
+    }
+    onCustomerSelect(event: TypeaheadMatch): void {
+      this.selectedCustomerId = event.item.id;
+      this.selectedCustomerName = event.item.name;
+    }  
     applyFilters(): void {
-      // Filter invoices based on criteria
       this.invoices$ = this.invoices$.pipe(
         map((invoices) => {
           return invoices
             .filter((invoice) => {
-              // Apply customer filter
-              if (this.filterByCustomer !== undefined) {
-                if (invoice.strankaId != this.filterByCustomer) {
-                  console.log("this.filterByCustomer, ", this.filterByCustomer);
-
+              if (this.selectedCustomerId !== undefined) {
+                if (invoice.clientId != this.selectedCustomerId) {
                   return false;
                 }
               }
-    
-              // Apply date range filter
               if (this.fromDate && this.toDate) {
                 const fromDate = new Date(this.fromDate);
                 const toDate = new Date(this.toDate);
                 const invoiceDate = new Date(invoice.dateOfCreation);
-                console.log('fromDate, ', fromDate);
-                console.log('toDate, ', toDate);
-                console.log('invoiceDate, ', invoiceDate);
 
-                // Check if invoiceDate is within the date range
                 if (invoiceDate.getTime() < fromDate.getTime() || invoiceDate.getTime() > toDate.getTime()) {
                   return false;
                 }
               }
-              console.log("hello");
-              return true; // Invoice passes all filters
+              return true; 
             });
         })
       );
-      console.log(this.invoices$);
     }  
     clearFilters(): void {
-      // Reset to original invoices
       this.invoices$ = this.invoiceService.invoices$;;
-      // Reset filter criteria
-      this.filterByCustomer = undefined;
+      this.selectedCustomerId = 0;
+      this.selectedCustomerName = "";
       this.fromDate = null;
       this.toDate = null;
     }
-    
-  
     navigateToAddLineRow(invoiceId: number, lineItemId?: number) {
       if (lineItemId) {
-        console.log("Hello")
-        // Editing an existing lineItem
         this.router.navigate(['invoiceform', invoiceId, lineItemId]);
       } else {
-        // Creating a new lineItem
         this.router.navigate(['invoiceform', invoiceId, 'new']);
       }
     }
